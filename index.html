@@ -1047,6 +1047,8 @@ kbd {
     <div class="result-big-score" id="res-score">5/5</div>
     <div class="result-score-label">acertos</div>
     <div id="res-bottles" style="display:flex;gap:8px;justify-content:center;margin-bottom:32px"></div>
+    <button class="btn btn-gold btn-full" id="retry-btn" onclick="retryAttempt()" style="margin-bottom:10px">Tentar novamente</button>
+    <button class="btn btn-outline btn-full" onclick="show('screen-landing')">Voltar</button>
   </div>
 </div>
 
@@ -1273,17 +1275,30 @@ async function doLogin(){
     document.getElementById('waiting-badge').style.cssText='background:rgba(245,200,66,.1);color:var(--gold);border:1px solid rgba(245,200,66,.2);padding:8px 20px;border-radius:50px;font-weight:600;font-size:15px;margin-bottom:24px';
     document.getElementById('waiting-match').textContent=match?'Aguardando início da partida...':'Aguardando o administrador preparar o jogo...';
     show('screen-waiting');
+    startWaitingAutoCheck();
     return;
   }
   enterGame(team,match);
 }
 
-async function checkStatus(){
+let waitingTimer=null;
+
+function startWaitingAutoCheck(){
+  clearInterval(waitingTimer);
+  waitingTimer=setInterval(()=>checkStatus(true),1500);
+}
+
+function stopWaitingAutoCheck(){
+  clearInterval(waitingTimer);
+  waitingTimer=null;
+}
+
+async function checkStatus(silent=false){
   if(!S.currentPlayer) return;
   await syncFromServer();
   const match=getMatchForTeam(S.currentPlayer.id);
   if(match&&S.gameStarted) enterGame(S.currentPlayer,match);
-  else notify('Ainda aguardando o admin iniciar...','gold');
+  else if(!silent) notify('Ainda aguardando o admin iniciar...','gold');
 }
 
 function getMatchForTeam(tid){
@@ -1294,15 +1309,20 @@ function getMatchForTeam(tid){
 let playerOrder=[], dragSrc=null, movesMade=0, gameTimerInterval=null;
 
 function enterGame(team,match){
+  stopWaitingAutoCheck();
   const isA=match.teamA===team.id;
   const result=isA?match.resultA:match.resultB;
-  if(result!==undefined){ showResult(team,result,S.numBottles,isA?match.orderA:match.orderB,playerOrder); return; }
+  if(result!==undefined){
+    showResult(team,result,S.numBottles,isA?match.orderA:match.orderB,isA?(match.currentA||[]):(match.currentB||[]));
+    return;
+  }
 
   document.getElementById('gh-title').textContent='🍾 '+team.name;
   const opp=S.teams.find(t=>t.id===(isA?match.teamB:match.teamA));
   document.getElementById('gh-sub').textContent=opp?'Contra '+opp.name:'Jogo da equipe';
 
-  playerOrder=[...(isA?match.orderA:match.orderB)];
+  const visibleOrder=isA?(match.currentA||match.orderA):(match.currentB||match.orderB);
+  playerOrder=[...visibleOrder];
   movesMade=0;
   document.getElementById('move-dot-0').classList.remove('used');
   document.getElementById('move-label').textContent='0 / 1 movimentos';
@@ -1390,16 +1410,23 @@ function renderPlayerBottles(locked){
   });
 }
 
-function confirmGuess(){
+async function confirmGuess(){
   clearInterval(gameTimerInterval);
   playClick();
+  await syncFromServer();
   const match=getMatchForTeam(S.currentPlayer.id);
   if(!match) return;
   const isA=match.teamA===S.currentPlayer.id;
   const correct=isA?match.orderA:match.orderB;
   let hits=0;
   playerOrder.forEach((b,i)=>{ if(b===correct[i]) hits++; });
-  if(isA) match.resultA=hits; else match.resultB=hits;
+  if(isA){
+    match.currentA=[...playerOrder];
+    match.resultA=hits;
+  } else {
+    match.currentB=[...playerOrder];
+    match.resultB=hits;
+  }
   if(!match.teamB){
     match.winner=hits===S.numBottles?match.teamA:undefined;
   } else if(match.resultA!==undefined&&match.resultB!==undefined){
@@ -1438,6 +1465,7 @@ function showResult(team,hits,total,correct,guess){
   document.getElementById('res-title').textContent=pct===1?'PERFEITO!':hits>0?hits+' ACERTO'+(hits>1?'S':''):'ZERO ACERTOS';
   document.getElementById('res-sub').textContent=pct===1?'Parabéns, '+team.name+'! Ordem completamente correta!':'Acertou '+hits+' de '+total+' posições.';
   document.getElementById('res-score').textContent=hits+'/'+total;
+  document.getElementById('retry-btn').style.display=pct===1?'none':'inline-flex';
   const rb=document.getElementById('res-bottles');
   rb.innerHTML='';
   if(guess){
@@ -1451,6 +1479,18 @@ function showResult(team,hits,total,correct,guess){
     });
   }
   show('screen-result');
+}
+
+async function retryAttempt(){
+  if(!S.currentPlayer) return;
+  await syncFromServer();
+  const match=getMatchForTeam(S.currentPlayer.id);
+  if(!match) return;
+  const isA=match.teamA===S.currentPlayer.id;
+  if(isA) delete match.resultA; else delete match.resultB;
+  if(match.winner===S.currentPlayer.id) delete match.winner;
+  save();
+  enterGame(S.currentPlayer,match);
 }
 
 // ========== PROJECTOR ==========
@@ -1509,7 +1549,7 @@ function renderProjector(){
             <div class="box-label" style="text-align:center;margin-bottom:12px">${match.resultA!==undefined?'RESULTADO':'CAIXA FECHADA'}</div>
             ${match.resultA!==undefined
               ? `<div style="text-align:center"><div style="font-family:'Bebas Neue';font-size:64px;color:var(--gold)">${match.resultA}/${S.numBottles}</div><div style="font-size:12px;color:rgba(245,237,214,.4);letter-spacing:2px">ACERTOS</div></div>`
-              : `<div class="proj-bottles">${renderProjBottles(match.orderA||[], S.numBottles, false)}</div>`
+              : `<div class="proj-bottles">${renderProjBottles(match.currentA||match.orderA||[], S.numBottles, false)}</div>`
             }
           </div>
           <div class="proj-score-big" style="color:${color}">${match.resultA!==undefined?match.resultA+'/'+S.numBottles:'—'}</div>
@@ -1529,7 +1569,7 @@ function renderProjector(){
           <div class="box-label" style="text-align:center;margin-bottom:12px">${m.resultA!==undefined?'RESULTADO':'CAIXA FECHADA'}</div>
           ${m.resultA!==undefined
             ? `<div style="text-align:center"><div style="font-family:'Bebas Neue';font-size:64px;color:var(--gold)">${m.resultA}/${S.numBottles}</div><div style="font-size:12px;color:rgba(245,237,214,.4);letter-spacing:2px">ACERTOS</div></div>`
-            : `<div class="proj-bottles">${renderProjBottles(m.orderA||[], S.numBottles, m.resultA!==undefined)}</div>`
+            : `<div class="proj-bottles">${renderProjBottles(m.currentA||m.orderA||[], S.numBottles, m.resultA!==undefined)}</div>`
           }
         </div>
         <div class="proj-score-big" style="color:${colorA}">${m.resultA!==undefined?m.resultA+'/'+S.numBottles:'—'}</div>
@@ -1548,7 +1588,7 @@ function renderProjector(){
           <div class="box-label" style="text-align:center;margin-bottom:12px">${m.resultB!==undefined?'RESULTADO':'CAIXA FECHADA'}</div>
           ${m.resultB!==undefined
             ? `<div style="text-align:center"><div style="font-family:'Bebas Neue';font-size:64px;color:var(--gold)">${m.resultB}/${S.numBottles}</div><div style="font-size:12px;color:rgba(245,237,214,.4);letter-spacing:2px">ACERTOS</div></div>`
-            : `<div class="proj-bottles">${renderProjBottles(m.orderB||[], S.numBottles, m.resultB!==undefined)}</div>`
+            : `<div class="proj-bottles">${renderProjBottles(m.currentB||m.orderB||[], S.numBottles, m.resultB!==undefined)}</div>`
           }
         </div>
         <div class="proj-score-big" style="color:${colorB}">${m.resultB!==undefined?m.resultB+'/'+S.numBottles:'—'}</div>
@@ -1660,7 +1700,11 @@ function shuffleAll(){
   prepareGamesForTeams();
   S.matches.forEach(m=>{
     m.orderA=shuffleArr([...Array(n).keys()]);
-    if(m.teamB) m.orderB=shuffleArr([...Array(n).keys()]);
+    m.currentA=createStartingOrder(m.orderA);
+    if(m.teamB){
+      m.orderB=shuffleArr([...Array(n).keys()]);
+      m.currentB=createStartingOrder(m.orderB);
+    }
     delete m.resultA; delete m.resultB; delete m.winner;
   });
   save();
@@ -1675,6 +1719,9 @@ function startMatch(){
   S.adminPass=document.getElementById('cfg-pass').value||'admin123';
   if(!S.teams.length){notify('Adicione pelo menos 1 equipe!','red');return;}
   prepareGamesForTeams();
+  S.matches.forEach(m=>{
+    delete m.resultA; delete m.resultB; delete m.winner;
+  });
   S.gameStarted=true;
   save();
   updateAdminStatus();
@@ -1689,16 +1736,29 @@ function prepareGamesForTeams(){
   S.currentRound=0;
   S.matches=S.teams.map((team,i)=>{
     const existing=S.matches.find(m=>m.teamA===team.id&&!m.teamB);
+    const orderA=existing?.orderA&&existing.orderA.length===n?existing.orderA:shuffleArr([...Array(n).keys()]);
+    const currentA=existing?.currentA&&existing.currentA.length===n?existing.currentA:createStartingOrder(orderA);
     return {
       id:existing?.id||'solo'+team.id,
       round:0,
       teamA:team.id,
       teamB:null,
-      orderA:existing?.orderA&&existing.orderA.length===n?existing.orderA:shuffleArr([...Array(n).keys()]),
+      orderA,
+      currentA,
       resultA:existing?.resultA,
       winner:existing?.winner
     };
   });
+}
+
+function createStartingOrder(correct){
+  let order=shuffleArr(correct);
+  let guard=0;
+  while(order.join(',')===correct.join(',')&&guard<20){
+    order=shuffleArr(correct);
+    guard++;
+  }
+  return order;
 }
 
 function advanceRound(){
