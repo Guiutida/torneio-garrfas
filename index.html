@@ -1192,18 +1192,48 @@ function defaultState(){
     currentPlayer:null
   };
 }
-function save(){ try{localStorage.setItem('garrafas2',JSON.stringify(S));}catch(e){} }
+function normalizeState(state){
+  const base=defaultState();
+  const next={...base,...(state||{})};
+  if(!Array.isArray(next.teams)) next.teams=[];
+  if(!Array.isArray(next.matches)) next.matches=[];
+  if(!next.numBottles) next.numBottles=5;
+  if(!next.adminPass) next.adminPass='admin123';
+  if(!next.timerSeconds && next.timerSeconds!==0) next.timerSeconds=120;
+  if(!next.currentRound) next.currentRound=0;
+  return next;
+}
+
+function save(){
+  try{localStorage.setItem('garrafas2',JSON.stringify(S));}catch(e){}
+  if(location.protocol.startsWith('http')){
+    const sharedState={...S,currentPlayer:null};
+    fetch('/api/state',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(sharedState)
+    }).catch(()=>{});
+  }
+}
 function load(){
-  try{ const d=localStorage.getItem('garrafas2'); S=d?JSON.parse(d):defaultState(); }
+  try{ const d=localStorage.getItem('garrafas2'); S=d?normalizeState(JSON.parse(d)):defaultState(); }
   catch(e){ S=defaultState(); }
-  if(!S.teams) S.teams=[];
-  if(!S.matches) S.matches=[];
-  if(!S.numBottles) S.numBottles=5;
-  if(!S.adminPass) S.adminPass='admin123';
-  if(!S.timerSeconds && S.timerSeconds!==0) S.timerSeconds=120;
-  if(!S.currentRound) S.currentRound=0;
+}
+
+async function syncFromServer(){
+  if(!location.protocol.startsWith('http')) return;
+  try{
+    const currentPlayer=S&&S.currentPlayer?S.currentPlayer:null;
+    const response=await fetch('/api/state',{cache:'no-store'});
+    if(!response.ok) return;
+    const remote=await response.json();
+    S=normalizeState(remote);
+    if(currentPlayer) S.currentPlayer=currentPlayer;
+    try{localStorage.setItem('garrafas2',JSON.stringify(S));}catch(e){}
+  }catch(e){}
 }
 load();
+syncFromServer();
 routeFromLink();
 
 // ========== NOTIFICATION ==========
@@ -1227,8 +1257,9 @@ function routeFromLink(){
 }
 
 // ========== LOGIN ==========
-function doLogin(){
+async function doLogin(){
   playClick();
+  await syncFromServer();
   const name=document.getElementById('login-team').value.trim();
   const err=document.getElementById('login-err');
   err.style.display='none';
@@ -1247,9 +1278,9 @@ function doLogin(){
   enterGame(team,match);
 }
 
-function checkStatus(){
+async function checkStatus(){
   if(!S.currentPlayer) return;
-  load();
+  await syncFromServer();
   const match=getMatchForTeam(S.currentPlayer.id);
   if(match&&S.gameStarted) enterGame(S.currentPlayer,match);
   else notify('Ainda aguardando o admin iniciar...','gold');
@@ -1424,8 +1455,8 @@ function showResult(team,hits,total,correct,guess){
 
 // ========== PROJECTOR ==========
 let projTimer;
-function enterProjector(){
-  load();
+async function enterProjector(){
+  await syncFromServer();
   renderProjector();
   show('screen-projector');
   startProjectorUpdates();
@@ -1433,7 +1464,7 @@ function enterProjector(){
 
 function startProjectorUpdates(){
   clearInterval(projTimer);
-  projTimer=setInterval(()=>{ load(); renderProjector(); },3000);
+  projTimer=setInterval(async ()=>{ await syncFromServer(); renderProjector(); },3000);
 }
 
 function renderProjector(){
@@ -1560,8 +1591,8 @@ function renderProjBracket(){
 }
 
 // ========== ADMIN ==========
-function doAdminLogin(){
-  load();
+async function doAdminLogin(){
+  await syncFromServer();
   const p=document.getElementById('admin-pass-in').value;
   const err=document.getElementById('admin-err');
   if(p===S.adminPass||p==='admin123'){

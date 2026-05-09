@@ -4,6 +4,7 @@ Thumbs.db
 *.tmp
 node_modules/
 .env
+state.json
 .vs/
 .vscode/*
 !.vscode/settings.json

@@ -1,6 +1,6 @@
 # Torneio das Garrafas
 
-Jogo web estatico para equipes tentarem acertar a ordem secreta das garrafas.
+Jogo web para equipes tentarem acertar a ordem secreta das garrafas.
 
 ## Paginas
 
@@ -9,10 +9,11 @@ Jogo web estatico para equipes tentarem acertar a ordem secreta das garrafas.
 
 ## Render
 
-Crie um **Static Site** no Render apontando para este repositorio.
+Crie um **Web Service** no Render apontando para este repositorio.
 
-- Build Command: deixe vazio
-- Publish Directory: `.`
+- Runtime: Node
+- Build Command: deixe vazio ou use `npm install`
+- Start Command: `npm start`
 
 Depois de publicar:
 
@@ -20,3 +21,6 @@ Depois de publicar:
 - Admin: `https://seu-site.onrender.com/admin.html`
 
 Senha padrao do admin: `admin123`
+
+Observacao: precisa ser Web Service, nao Static Site, porque jogadores e admin
+compartilham o mesmo estado do jogo pelo servidor.
