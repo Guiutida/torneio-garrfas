@@ -581,19 +581,35 @@ body {
   background: radial-gradient(ellipse at center, #1a1a1a 0%, #0d0d0d 100%);
 }
 .result-card {
-  width: 500px;
-  background: rgba(255,255,255,.04);
-  border: 1px solid rgba(255,255,255,.1);
-  border-radius: 24px;
-  padding: 48px;
+  width: min(460px, calc(100% - 32px));
+  background:
+    linear-gradient(180deg, rgba(245,200,66,.08), transparent 34%),
+    rgba(255,255,255,.045);
+  border: 1px solid rgba(245,200,66,.18);
+  border-radius: 18px;
+  padding: 34px;
   text-align: center;
+  box-shadow: 0 24px 70px rgba(0,0,0,.42);
 }
-.result-trophy { font-size: 80px; margin-bottom: 16px; animation: trophySpin .6s cubic-bezier(.2,1.4,.5,1) both; }
-@keyframes trophySpin { from { transform: scale(0) rotate(-20deg); } to { transform: scale(1) rotate(0deg); } }
-.result-title { font-family: 'Bebas Neue'; font-size: 48px; color: var(--gold); letter-spacing: 3px; margin-bottom: 8px; }
-.result-sub { font-size: 15px; color: rgba(245,237,214,.5); margin-bottom: 32px; }
-.result-big-score { font-family: 'Bebas Neue'; font-size: 96px; color: var(--cream); line-height: 1; }
-.result-score-label { font-size: 13px; color: rgba(245,237,214,.4); letter-spacing: 2px; text-transform: uppercase; margin-top: -4px; margin-bottom: 32px; }
+.result-trophy {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+  background: rgba(245,200,66,.12);
+  border: 1px solid rgba(245,200,66,.3);
+  color: var(--gold);
+  font-family: 'Bebas Neue';
+  font-size: 30px;
+  letter-spacing: 1px;
+}
+.result-title { font-family: 'Bebas Neue'; font-size: 34px; color: var(--gold); letter-spacing: 3px; margin-bottom: 8px; }
+.result-sub { font-size: 15px; color: rgba(245,237,214,.58); margin: 0 auto 26px; max-width: 320px; line-height: 1.55; }
+.result-big-score { font-family: 'Bebas Neue'; font-size: 104px; color: var(--cream); line-height: .88; }
+.result-score-label { font-size: 12px; color: rgba(245,237,214,.38); letter-spacing: 3px; text-transform: uppercase; margin: 10px 0 30px; }
 
 /* ======== PROJECTOR SCREEN ======== */
 #screen-projector {
@@ -1046,8 +1062,7 @@ kbd {
     <div class="result-sub" id="res-sub">Equipe Alpha acertou tudo!</div>
     <div class="result-big-score" id="res-score">5/5</div>
     <div class="result-score-label">acertos</div>
-    <div id="res-bottles" style="display:flex;gap:8px;justify-content:center;margin-bottom:32px"></div>
-    <button class="btn btn-gold btn-full" id="retry-btn" onclick="retryAttempt()" style="margin-bottom:10px">Tentar novamente</button>
+    <button class="btn btn-gold btn-full" id="retry-btn" onclick="retryAttempt()" style="margin-bottom:10px">Continuar tentando</button>
     <button class="btn btn-outline btn-full" onclick="show('screen-landing')">Voltar</button>
   </div>
 </div>
@@ -1461,23 +1476,11 @@ async function confirmGuess(){
 
 function showResult(team,hits,total,correct,guess){
   const pct=hits/total;
-  document.getElementById('res-trophy').textContent=pct===1?'🏆':pct>=.6?'🥈':'😅';
-  document.getElementById('res-title').textContent=pct===1?'PERFEITO!':hits>0?hits+' ACERTO'+(hits>1?'S':''):'ZERO ACERTOS';
-  document.getElementById('res-sub').textContent=pct===1?'Parabéns, '+team.name+'! Ordem completamente correta!':'Acertou '+hits+' de '+total+' posições.';
+  document.getElementById('res-trophy').textContent=String(hits);
+  document.getElementById('res-title').textContent=pct===1?'ORDEM CERTA':'RESULTADO DA TENTATIVA';
+  document.getElementById('res-sub').textContent=pct===1?'Parabens, '+team.name+'! Voce acertou a ordem completa.':'Voce acertou '+hits+' de '+total+'. A ordem continua escondida.';
   document.getElementById('res-score').textContent=hits+'/'+total;
   document.getElementById('retry-btn').style.display=pct===1?'none':'inline-flex';
-  const rb=document.getElementById('res-bottles');
-  rb.innerHTML='';
-  if(guess){
-    guess.forEach((b,i)=>{
-      const ok=correct&&correct[i]===b;
-      const d=document.createElement('div');
-      d.className='reveal-bottle-mini bottle-'+b+(ok?' correct':' wrong');
-      d.style.width='44px';d.style.height='60px';d.style.borderRadius='8px 8px 5px 5px';
-      d.innerHTML=BOTTLE_EMOJIS[b]+(ok?'<div class="reveal-check">✓</div>':'');
-      rb.appendChild(d);
-    });
-  }
   show('screen-result');
 }
 
