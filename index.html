@@ -1,0 +1,1824 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Torneio das Garrafas</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --wood-dark: #3d1f0a;
+  --wood-mid: #6b3a1f;
+  --wood-light: #a0622a;
+  --wood-highlight: #c87941;
+  --gold: #f5c842;
+  --gold-dark: #c9921a;
+  --cream: #f5edd6;
+  --green-felt: #1a4a2e;
+  --green-felt-light: #256b41;
+  --red-team: #c0392b;
+  --blue-team: #1a6aab;
+  --white: #fff;
+  --bg: #0d0d0d;
+  --panel-bg: #111;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--cream);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ======== SCREENS ======== */
+.screen { display: none; min-height: 100vh; }
+.screen.active { display: flex; flex-direction: column; }
+
+/* ======== LANDING ======== */
+#screen-landing {
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at 50% 0%, #3d1f0a 0%, #0d0d0d 70%);
+  position: relative;
+  overflow: hidden;
+}
+#screen-landing::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(255,255,255,0.015) 40px, rgba(255,255,255,0.015) 41px),
+              repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(255,255,255,0.015) 40px, rgba(255,255,255,0.015) 41px);
+}
+.landing-content {
+  position: relative;
+  text-align: center;
+  z-index: 1;
+}
+.landing-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(64px, 10vw, 128px);
+  line-height: .9;
+  color: var(--gold);
+  text-shadow: 0 4px 40px rgba(245,200,66,.3);
+  letter-spacing: 4px;
+  animation: titleDrop .6s cubic-bezier(.2,1.4,.5,1) both;
+}
+@keyframes titleDrop { from { opacity:0; transform: translateY(-40px) scale(.9); } to { opacity:1; transform: none; } }
+.landing-sub {
+  font-size: 16px;
+  color: rgba(245,237,214,.5);
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  margin: 12px 0 48px;
+}
+.landing-bottles {
+  font-size: 64px;
+  margin-bottom: 40px;
+  animation: float 3s ease-in-out infinite;
+  filter: drop-shadow(0 8px 24px rgba(245,200,66,.2));
+}
+@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+
+.mode-cards {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.mode-card {
+  width: 200px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(245,200,66,.2);
+  border-radius: 16px;
+  padding: 28px 20px;
+  cursor: pointer;
+  transition: all .2s;
+  text-align: center;
+}
+.mode-card:hover {
+  background: rgba(245,200,66,.08);
+  border-color: var(--gold);
+  transform: translateY(-4px);
+  box-shadow: 0 16px 40px rgba(245,200,66,.15);
+}
+.mode-card .icon { font-size: 40px; margin-bottom: 12px; }
+.mode-card .label {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  letter-spacing: 2px;
+  color: var(--gold);
+  margin-bottom: 6px;
+}
+.mode-card .desc { font-size: 12px; color: rgba(245,237,214,.5); line-height: 1.5; }
+
+/* ======== INPUTS & BUTTONS ======== */
+.input-field {
+  width: 100%;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 10px;
+  padding: 12px 16px;
+  color: var(--cream);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  outline: none;
+  transition: border-color .2s;
+}
+.input-field:focus { border-color: var(--gold); }
+.input-field::placeholder { color: rgba(245,237,214,.3); }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: .5px;
+  transition: all .15s;
+}
+.btn-gold {
+  background: var(--gold);
+  color: #1a0a00;
+}
+.btn-gold:hover { background: #f7d060; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(245,200,66,.3); }
+.btn-outline {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,.2);
+  color: var(--cream);
+}
+.btn-outline:hover { border-color: var(--gold); color: var(--gold); }
+.btn-danger { background: #7b1111; color: #fff; }
+.btn-danger:hover { background: #9b1515; }
+.btn-success { background: #1a4a2e; color: #7ee8a2; border: 1px solid #256b41; }
+.btn-success:hover { background: #256b41; }
+.btn:disabled { opacity: .35; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+.btn-full { width: 100%; }
+.btn-sm { padding: 7px 14px; font-size: 13px; }
+
+/* ======== LOGIN SCREEN ======== */
+#screen-login {
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at 30% 50%, #1a4a2e22 0%, transparent 60%),
+              radial-gradient(ellipse at 70% 50%, #3d1f0a33 0%, transparent 60%),
+              #0d0d0d;
+}
+.login-box {
+  width: 400px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 20px;
+  padding: 40px;
+  backdrop-filter: blur(10px);
+}
+.login-logo { font-family: 'Bebas Neue'; font-size: 28px; color: var(--gold); letter-spacing: 3px; margin-bottom: 8px; }
+.login-sub { font-size: 13px; color: rgba(245,237,214,.4); margin-bottom: 32px; }
+.field-label { font-size: 12px; color: rgba(245,237,214,.5); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; display: block; }
+.field-group { margin-bottom: 20px; }
+.error-msg { color: #e07070; font-size: 13px; margin-top: 12px; text-align: center; }
+
+/* ======== WAITING SCREEN ======== */
+#screen-waiting {
+  align-items: center;
+  justify-content: center;
+  background: #0d0d0d;
+}
+.waiting-box { text-align: center; max-width: 480px; }
+.waiting-pulse {
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  background: rgba(245,200,66,.1);
+  border: 2px solid var(--gold);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 32px;
+  margin: 0 auto 24px;
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(245,200,66,.3)} 50%{box-shadow:0 0 0 20px rgba(245,200,66,0)} }
+.waiting-title { font-family: 'Bebas Neue'; font-size: 36px; color: var(--gold); letter-spacing: 2px; margin-bottom: 8px; }
+.waiting-sub { font-size: 15px; color: rgba(245,237,214,.5); margin-bottom: 32px; }
+.team-badge {
+  display: inline-block;
+  padding: 8px 20px;
+  border-radius: 50px;
+  font-weight: 600;
+  font-size: 15px;
+  margin-bottom: 24px;
+}
+
+/* ======== GAME SCREEN ======== */
+#screen-game {
+  background: var(--green-felt);
+  background-image: 
+    repeating-linear-gradient(45deg, rgba(0,0,0,.05) 0px, rgba(0,0,0,.05) 1px, transparent 1px, transparent 8px),
+    repeating-linear-gradient(-45deg, rgba(0,0,0,.05) 0px, rgba(0,0,0,.05) 1px, transparent 1px, transparent 8px);
+  min-height: 100vh;
+}
+.game-header {
+  background: rgba(0,0,0,.4);
+  border-bottom: 1px solid rgba(255,255,255,.05);
+  padding: 16px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.game-header-title { font-family: 'Bebas Neue'; font-size: 24px; color: var(--gold); letter-spacing: 2px; }
+.game-header-sub { font-size: 12px; color: rgba(245,237,214,.4); margin-top: 2px; }
+.timer-display {
+  font-family: 'DM Mono', monospace;
+  font-size: 28px;
+  font-weight: 500;
+  color: var(--gold);
+  background: rgba(0,0,0,.4);
+  padding: 6px 20px;
+  border-radius: 10px;
+  border: 1px solid rgba(245,200,66,.2);
+  min-width: 100px;
+  text-align: center;
+}
+.timer-display.urgent { color: #e07070; border-color: rgba(224,112,112,.3); animation: timerPulse .5s ease-in-out infinite; }
+@keyframes timerPulse { 0%,100%{opacity:1} 50%{opacity:.6} }
+
+.game-arena {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  gap: 32px;
+}
+
+/* ======== WOODEN BOX ======== */
+.box-container {
+  perspective: 800px;
+}
+.box-inner {
+  position: relative;
+  transition: transform .8s cubic-bezier(.4,0,.2,1);
+  transform-style: preserve-3d;
+}
+.box-inner.flipped { transform: rotateY(180deg); }
+
+.box-face {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.box-back {
+  background: var(--wood-dark);
+  border-radius: 12px;
+  padding: 20px;
+  border: 3px solid var(--wood-mid);
+  box-shadow: 
+    inset 0 2px 0 rgba(255,255,255,.08),
+    inset 0 -2px 0 rgba(0,0,0,.3),
+    0 8px 40px rgba(0,0,0,.6);
+  position: relative;
+}
+.box-back::before {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  border: 1px solid rgba(255,255,255,.05);
+  border-radius: 6px;
+  pointer-events: none;
+}
+
+/* wood grain lines */
+.wood-grain {
+  position: absolute;
+  inset: 0;
+  border-radius: 9px;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: .4;
+}
+.wood-grain::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    92deg,
+    transparent 0px,
+    transparent 12px,
+    rgba(255,255,255,.03) 12px,
+    rgba(255,255,255,.03) 13px,
+    transparent 13px,
+    transparent 28px,
+    rgba(0,0,0,.05) 28px,
+    rgba(0,0,0,.05) 30px
+  );
+}
+
+.box-label {
+  font-family: 'Bebas Neue';
+  font-size: 13px;
+  letter-spacing: 3px;
+  color: rgba(245,237,214,.3);
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.bottles-row {
+  display: flex;
+  gap: 18px;
+  justify-content: center;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+/* ======== BOTTLE ======== */
+.bottle-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 54px;
+}
+.bottle-slot .slot-num {
+  font-size: 11px;
+  color: rgba(245,237,214,.3);
+  font-family: 'DM Mono';
+  line-height: 1;
+}
+
+.bottle {
+  width: 74px;
+  height: 138px;
+  background:
+    radial-gradient(ellipse at 25% 12%, rgba(255,255,255,.5) 0 8%, transparent 18%),
+    linear-gradient(90deg, rgba(255,255,255,.32) 0 10%, rgba(255,255,255,.08) 26%, rgba(255,255,255,.02) 52%, rgba(0,0,0,.26) 100%),
+    linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,.04));
+  border-radius: 28px 28px 14px 14px / 22px 22px 14px 14px;
+  border: 2px solid rgba(255,255,255,.26);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: 14px;
+  cursor: grab;
+  position: relative;
+  transition: transform .15s, box-shadow .15s;
+  user-select: none;
+  backdrop-filter: blur(4px);
+  box-shadow:
+    inset 10px 0 20px rgba(255,255,255,.18),
+    inset -12px 0 22px rgba(0,0,0,.26),
+    0 16px 26px rgba(0,0,0,.44);
+  transform-style: preserve-3d;
+  overflow: visible;
+}
+.bottle::before {
+  content: '';
+  position: absolute;
+  left: 16px;
+  top: 17px;
+  width: 13px;
+  height: 92px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, rgba(255,255,255,.68), rgba(255,255,255,.12));
+  filter: blur(.3px);
+  opacity: .76;
+  pointer-events: none;
+}
+.bottle::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: -9px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgba(0,0,0,.38);
+  filter: blur(5px);
+  transform: translateZ(-1px);
+  pointer-events: none;
+}
+.bottle:hover { transform: translateY(-8px) rotateX(4deg) rotateY(-7deg) scale(1.04); box-shadow: inset 10px 0 20px rgba(255,255,255,.18), inset -12px 0 22px rgba(0,0,0,.26), 0 20px 38px rgba(0,0,0,.55); }
+.bottle.dragging { opacity: .5; cursor: grabbing; transform: scale(.95); }
+.bottle.drag-over { transform: translateY(-10px) rotateX(4deg) rotateY(-7deg) scale(1.06); box-shadow: 0 0 0 2px var(--gold), 0 18px 34px rgba(0,0,0,.55); }
+.bottle.locked { cursor: default; }
+.bottle.locked:hover {
+  transform: none;
+  box-shadow:
+    inset 10px 0 20px rgba(255,255,255,.18),
+    inset -12px 0 22px rgba(0,0,0,.26),
+    0 16px 26px rgba(0,0,0,.44);
+}
+
+.bottle-neck {
+  position: absolute;
+  top: -31px;
+  width: 30px;
+  height: 38px;
+  border-radius: 10px 10px 4px 4px;
+  border: 2px solid rgba(255,255,255,.25);
+  border-bottom: 0;
+  background:
+    linear-gradient(90deg, rgba(255,255,255,.32), rgba(255,255,255,.08) 42%, rgba(0,0,0,.18)),
+    rgba(255,255,255,.1);
+  box-shadow:
+    inset 6px 0 10px rgba(255,255,255,.16),
+    inset -6px 0 10px rgba(0,0,0,.18);
+}
+.bottle-cap {
+  position: absolute;
+  top: -42px;
+  width: 34px;
+  height: 13px;
+  border-radius: 9px 9px 5px 5px;
+  background: var(--cap-color);
+  border: 1px solid rgba(255,255,255,.3);
+  box-shadow:
+    inset 7px 0 8px rgba(255,255,255,.32),
+    inset -7px 0 8px rgba(0,0,0,.18),
+    0 3px 8px rgba(0,0,0,.28);
+}
+
+.bottle-liquid {
+  position: absolute;
+  left: 9px;
+  right: 9px;
+  bottom: 9px;
+  height: 70%;
+  border-radius: 21px 21px 10px 10px / 17px 17px 10px 10px;
+  background:
+    radial-gradient(ellipse at 28% 14%, rgba(255,255,255,.36), transparent 26%),
+    linear-gradient(90deg, rgba(255,255,255,.2), transparent 36%, rgba(0,0,0,.18)),
+    var(--liquid-color);
+  box-shadow:
+    inset 8px 0 13px rgba(255,255,255,.18),
+    inset -10px 0 16px rgba(0,0,0,.2);
+  overflow: hidden;
+}
+.bottle-liquid::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -7px;
+  height: 17px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.28);
+}
+.bottle-label {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 28px;
+  border-radius: 7px;
+  margin-bottom: 16px;
+  color: rgba(30,20,10,.78);
+  background: rgba(255,248,220,.82);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.45);
+}
+.bottle-id {
+  font-family: 'Bebas Neue';
+  font-size: 18px;
+  color: rgba(30,20,10,.74);
+  letter-spacing: 1px;
+}
+
+/* bottle colors */
+.bottle-0 { --liquid-color: #31d45d; --cap-color: #1f9b44; border-color: rgba(160,255,190,.35); }
+.bottle-1 { --liquid-color: #3e6cff; --cap-color: #254ac9; border-color: rgba(145,170,255,.35); }
+.bottle-2 { --liquid-color: #ff9f2f; --cap-color: #cf6d15; border-color: rgba(255,188,90,.35); }
+.bottle-3 { --liquid-color: #ee3131; --cap-color: #c91717; border-color: rgba(255,130,130,.35); }
+.bottle-4 { --liquid-color: #8d49e7; --cap-color: #652dbd; border-color: rgba(190,140,255,.35); }
+.bottle-5 { --liquid-color: #ffd93c; --cap-color: #d6ad16; border-color: rgba(255,226,100,.38); }
+.bottle-6 { --liquid-color: #29d5d5; --cap-color: #13999f; border-color: rgba(120,235,235,.35); }
+
+/* box front (revealed) */
+.box-front-face {
+  position: absolute;
+  inset: 0;
+  transform: rotateY(180deg);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  background: var(--wood-mid);
+  border-radius: 12px;
+  border: 3px solid var(--wood-highlight);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  box-shadow: 0 8px 40px rgba(0,0,0,.6);
+}
+.reveal-score {
+  font-family: 'Bebas Neue';
+  font-size: 72px;
+  color: var(--gold);
+  line-height: 1;
+  text-shadow: 0 4px 20px rgba(245,200,66,.4);
+}
+.reveal-label { font-size: 13px; color: rgba(245,237,214,.5); letter-spacing: 2px; text-transform: uppercase; margin-top: 4px; }
+.reveal-bottles-row { display: flex; gap: 8px; margin-top: 16px; }
+.reveal-bottle-mini {
+  width: 36px;
+  height: 50px;
+  border-radius: 6px 6px 4px 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  position: relative;
+  border: 1px solid rgba(255,255,255,.2);
+}
+.reveal-bottle-mini.correct { box-shadow: 0 0 0 2px #7ee8a2, 0 0 12px rgba(126,232,162,.4); }
+.reveal-bottle-mini.wrong { opacity: .4; }
+.reveal-check {
+  position: absolute;
+  top: -8px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  background: #1a4a2e;
+  border-radius: 50%;
+  border: 1px solid #7ee8a2;
+  color: #7ee8a2;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.move-indicator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(0,0,0,.3);
+  border-radius: 10px;
+  padding: 12px 20px;
+  border: 1px solid rgba(255,255,255,.06);
+}
+.move-dot {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.15);
+  border: 1px solid rgba(255,255,255,.2);
+  transition: all .3s;
+}
+.move-dot.used { background: var(--gold); border-color: var(--gold-dark); box-shadow: 0 0 8px rgba(245,200,66,.5); }
+.move-label { font-size: 13px; color: rgba(245,237,214,.5); font-family: 'DM Mono'; }
+
+/* ======== RESULT SCREEN ======== */
+#screen-result {
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at center, #1a1a1a 0%, #0d0d0d 100%);
+}
+.result-card {
+  width: 500px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 24px;
+  padding: 48px;
+  text-align: center;
+}
+.result-trophy { font-size: 80px; margin-bottom: 16px; animation: trophySpin .6s cubic-bezier(.2,1.4,.5,1) both; }
+@keyframes trophySpin { from { transform: scale(0) rotate(-20deg); } to { transform: scale(1) rotate(0deg); } }
+.result-title { font-family: 'Bebas Neue'; font-size: 48px; color: var(--gold); letter-spacing: 3px; margin-bottom: 8px; }
+.result-sub { font-size: 15px; color: rgba(245,237,214,.5); margin-bottom: 32px; }
+.result-big-score { font-family: 'Bebas Neue'; font-size: 96px; color: var(--cream); line-height: 1; }
+.result-score-label { font-size: 13px; color: rgba(245,237,214,.4); letter-spacing: 2px; text-transform: uppercase; margin-top: -4px; margin-bottom: 32px; }
+
+/* ======== PROJECTOR SCREEN ======== */
+#screen-projector {
+  background: #070707;
+  min-height: 100vh;
+  flex-direction: column;
+}
+.projector-header {
+  background: rgba(0,0,0,.8);
+  border-bottom: 1px solid rgba(245,200,66,.15);
+  padding: 16px 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.proj-title { font-family: 'Bebas Neue'; font-size: 28px; color: var(--gold); letter-spacing: 4px; }
+.proj-round { font-size: 13px; color: rgba(245,237,214,.4); letter-spacing: 2px; }
+.proj-timer {
+  font-family: 'DM Mono'; font-size: 40px; font-weight: 500; color: var(--gold);
+  text-shadow: 0 0 20px rgba(245,200,66,.4);
+}
+
+.projector-arena {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 0;
+  align-items: center;
+  padding: 24px;
+}
+.proj-team-side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 20px;
+}
+.proj-team-name {
+  font-family: 'Bebas Neue';
+  font-size: 36px;
+  letter-spacing: 3px;
+}
+.proj-box {
+  background: var(--wood-dark);
+  border-radius: 14px;
+  padding: 20px 24px;
+  border: 3px solid var(--wood-mid);
+  box-shadow: 0 8px 40px rgba(0,0,0,.8);
+  position: relative;
+  overflow: hidden;
+}
+.proj-box .wood-grain { opacity: .5; }
+.proj-bottles { display: flex; gap: 10px; justify-content: center; align-items: flex-end; }
+
+.proj-bottle {
+  width: 60px;
+  height: 90px;
+  border-radius: 8px 8px 5px 5px;
+  border: 1px solid rgba(255,255,255,.15);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: 8px;
+  position: relative;
+  transition: all .4s;
+}
+.proj-bottle-cap {
+  position: absolute;
+  top: -20px;
+  width: 16px;
+  height: 10px;
+  border-radius: 3px 3px 2px 2px;
+  background: rgba(255,255,255,.25);
+}
+.proj-bottle-neck {
+  position: absolute;
+  top: -12px;
+  width: 20px;
+  height: 16px;
+  border-radius: 3px 3px 0 0;
+}
+.proj-bottle-emoji { font-size: 22px; }
+.proj-bottle-id { font-family: 'Bebas Neue'; font-size: 14px; color: rgba(255,255,255,.7); }
+
+.proj-status {
+  padding: 8px 20px;
+  border-radius: 50px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.proj-status.waiting { background: rgba(255,255,255,.06); color: rgba(245,237,214,.4); border: 1px solid rgba(255,255,255,.08); }
+.proj-status.playing { background: rgba(26,74,46,.6); color: #7ee8a2; border: 1px solid rgba(38,107,65,.6); animation: statusGlow 2s ease-in-out infinite; }
+.proj-status.done { background: rgba(245,200,66,.1); color: var(--gold); border: 1px solid rgba(245,200,66,.2); }
+@keyframes statusGlow { 0%,100%{box-shadow:0 0 0 0 rgba(126,232,162,0)} 50%{box-shadow:0 0 0 6px rgba(126,232,162,.1)} }
+
+.proj-score-big {
+  font-family: 'Bebas Neue';
+  font-size: 56px;
+  line-height: 1;
+  color: var(--gold);
+  text-shadow: 0 4px 20px rgba(245,200,66,.3);
+}
+
+.vs-divider {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 20px;
+}
+.vs-text { font-family: 'Bebas Neue'; font-size: 48px; color: rgba(245,237,214,.15); letter-spacing: 4px; }
+.vs-line { width: 1px; height: 60px; background: linear-gradient(to bottom, transparent, rgba(255,255,255,.1), transparent); }
+
+/* BRACKET in projector */
+.proj-bracket {
+  border-top: 1px solid rgba(255,255,255,.05);
+  padding: 20px 40px;
+  background: rgba(0,0,0,.4);
+}
+.bracket-title { font-family: 'Bebas Neue'; font-size: 18px; color: rgba(245,200,66,.6); letter-spacing: 3px; margin-bottom: 12px; }
+.bracket-rounds { display: flex; gap: 24px; overflow-x: auto; }
+.bracket-round { min-width: 160px; }
+.bracket-round-title { font-size: 11px; color: rgba(245,237,214,.3); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; }
+.bracket-match {
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+.bracket-match-team { padding: 3px 0; color: rgba(245,237,214,.6); }
+.bracket-match-team.winner { color: var(--gold); font-weight: 600; }
+
+/* ======== ADMIN SCREEN ======== */
+#screen-admin {
+  background: #0a0a0a;
+  flex-direction: column;
+}
+.admin-header {
+  background: rgba(0,0,0,.8);
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  padding: 0 32px;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  height: 56px;
+  flex-shrink: 0;
+}
+.admin-logo { font-family: 'Bebas Neue'; font-size: 22px; color: var(--gold); letter-spacing: 3px; margin-right: 32px; }
+.admin-tab {
+  padding: 0 20px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(245,237,214,.4);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all .2s;
+  letter-spacing: .5px;
+}
+.admin-tab:hover { color: var(--cream); }
+.admin-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+.admin-exit { margin-left: auto; }
+
+.admin-body { flex: 1; display: flex; overflow: hidden; }
+.admin-content { flex: 1; overflow-y: auto; padding: 32px; }
+
+.section-card {
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.06);
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 20px;
+}
+.section-title {
+  font-family: 'Bebas Neue';
+  font-size: 20px;
+  color: var(--gold);
+  letter-spacing: 2px;
+  margin-bottom: 16px;
+}
+.section-sub { font-size: 13px; color: rgba(245,237,214,.4); margin-bottom: 16px; margin-top: -10px; }
+
+.teams-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.team-item {
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.team-item-name { font-weight: 600; font-size: 14px; }
+.team-item-code { font-family: 'DM Mono'; font-size: 13px; color: var(--gold); background: rgba(245,200,66,.08); padding: 3px 10px; border-radius: 6px; border: 1px solid rgba(245,200,66,.15); }
+.team-item-remove { background: none; border: none; color: rgba(224,112,112,.6); cursor: pointer; font-size: 16px; padding: 2px 6px; border-radius: 4px; }
+.team-item-remove:hover { color: #e07070; background: rgba(224,112,112,.1); }
+
+.add-team-row { display: flex; gap: 10px; }
+
+.config-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
+
+select.input-field { cursor: pointer; }
+option { background: #1a1a1a; }
+
+.action-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.status-pill {
+  padding: 6px 14px;
+  border-radius: 50px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .5px;
+}
+.status-pill.on { background: rgba(26,74,46,.6); color: #7ee8a2; }
+.status-pill.off { background: rgba(255,255,255,.06); color: rgba(245,237,214,.4); }
+
+/* bracket display */
+.bracket-display {
+  display: flex;
+  gap: 24px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+.bracket-col { min-width: 200px; }
+.bracket-col-title {
+  font-size: 11px;
+  color: rgba(245,237,214,.3);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255,255,255,.05);
+}
+.bracket-card {
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+}
+.bracket-card-team {
+  font-size: 13px;
+  padding: 4px 0;
+  color: rgba(245,237,214,.6);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.bracket-card-team.winner { color: var(--gold); }
+.bracket-card-score {
+  font-family: 'DM Mono';
+  font-size: 12px;
+  color: rgba(245,237,214,.4);
+}
+.bracket-divider { height: 1px; background: rgba(255,255,255,.05); margin: 6px 0; }
+
+/* monitor */
+.monitor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.monitor-card {
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.06);
+  border-radius: 12px;
+  padding: 20px;
+}
+.monitor-teams {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.monitor-team { text-align: center; }
+.monitor-team-name { font-weight: 600; font-size: 15px; margin-bottom: 4px; }
+.monitor-team-score { font-family: 'Bebas Neue'; font-size: 40px; color: var(--gold); line-height: 1; }
+.monitor-vs { font-family: 'Bebas Neue'; font-size: 24px; color: rgba(245,237,214,.2); }
+.monitor-team-status { font-size: 12px; color: rgba(245,237,214,.4); margin-top: 4px; }
+
+/* scroll */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 2px; }
+
+/* ADMIN KEYBOARD HINTS */
+.kbd-hints {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+.kbd-hint { font-size: 12px; color: rgba(245,237,214,.3); }
+kbd {
+  display: inline-block;
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 4px;
+  padding: 1px 7px;
+  font-family: 'DM Mono';
+  font-size: 11px;
+  color: rgba(245,237,214,.6);
+}
+
+/* NOTIFICATIONS */
+.notif {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: #1a1a1a;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 12px;
+  padding: 14px 20px;
+  font-size: 14px;
+  color: var(--cream);
+  z-index: 9999;
+  transform: translateY(80px);
+  opacity: 0;
+  transition: all .3s cubic-bezier(.2,1.4,.5,1);
+  max-width: 320px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.6);
+}
+.notif.show { transform: none; opacity: 1; }
+.notif.gold { border-color: rgba(245,200,66,.4); }
+.notif.green { border-color: rgba(126,232,162,.4); }
+.notif.red { border-color: rgba(224,112,112,.4); }
+</style>
+</head>
+<body>
+
+<!-- NOTIFICATION -->
+<div id="notif" class="notif"></div>
+
+<!-- ====== LANDING ====== -->
+<div id="screen-landing" class="screen active">
+  <div class="landing-content">
+    <div class="landing-bottles">🍾🍶🫙🍯🧴</div>
+    <div class="landing-title">TORNEIO<br>DAS GARRAFAS</div>
+    <div class="landing-sub">Descubra a ordem certa</div>
+    <div class="mode-cards">
+      <div class="mode-card" onclick="show('screen-login')">
+        <div class="icon">🎮</div>
+        <div class="label">Jogador</div>
+        <div class="desc">Digite o nome da sua equipe e jogue</div>
+      </div>
+      <div class="mode-card" onclick="enterProjector()">
+        <div class="icon">📺</div>
+        <div class="label">Telão</div>
+        <div class="desc">Modo projetor para toda a sala ver</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== ADMIN LOGIN ====== -->
+<div id="screen-admin-login" class="screen" style="align-items:center;justify-content:center;background:#0d0d0d">
+  <div class="login-box">
+    <div class="login-logo">🔐 Admin</div>
+    <div class="login-sub">Painel de controle do jogo</div>
+    <div class="field-group">
+      <label class="field-label">Senha</label>
+      <input class="input-field" type="password" id="admin-pass-in" placeholder="Digite a senha" onkeydown="if(event.key==='Enter')doAdminLogin()">
+    </div>
+    <button class="btn btn-gold btn-full" onclick="doAdminLogin()">Entrar no painel</button>
+    <div class="error-msg" id="admin-err" style="display:none"></div>
+    <button class="btn btn-outline btn-full" style="margin-top:10px" onclick="show('screen-landing')">Voltar</button>
+  </div>
+</div>
+
+<!-- ====== LOGIN ====== -->
+<div id="screen-login" class="screen" style="align-items:center;justify-content:center;background:radial-gradient(ellipse at 30% 50%,#1a4a2e22,transparent 60%),#0d0d0d">
+  <div class="login-box">
+    <div class="login-logo">🍾 Entrar</div>
+    <div class="login-sub">Digite apenas o nome da sua equipe</div>
+    <div class="field-group">
+      <label class="field-label">Nome da equipe</label>
+      <input class="input-field" type="text" id="login-team" placeholder="Ex: Equipe Alfa" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="btn btn-gold btn-full" onclick="doLogin()">Entrar no jogo</button>
+    <div class="error-msg" id="login-err" style="display:none"></div>
+    <button class="btn btn-outline btn-full" style="margin-top:10px" onclick="show('screen-landing')">Voltar</button>
+  </div>
+</div>
+
+<!-- ====== WAITING ====== -->
+<div id="screen-waiting" class="screen" style="align-items:center;justify-content:center;background:#0d0d0d">
+  <div class="waiting-box">
+    <div class="waiting-pulse">⏳</div>
+    <div class="waiting-title">Aguardando...</div>
+    <div class="waiting-sub">O administrador ainda não iniciou a partida</div>
+    <div id="waiting-badge" class="team-badge"></div>
+    <div id="waiting-match" style="font-size:14px;color:rgba(245,237,214,.4);margin-bottom:24px"></div>
+    <button class="btn btn-outline" onclick="checkStatus()">🔄 Verificar status</button>
+  </div>
+</div>
+
+<!-- ====== GAME ====== -->
+<div id="screen-game" class="screen">
+  <div class="game-header">
+    <div>
+      <div class="game-header-title" id="gh-title">Equipe Alpha</div>
+      <div class="game-header-sub" id="gh-sub">Rodada 1 · 1 movimento disponível</div>
+    </div>
+    <div class="timer-display" id="game-timer">—</div>
+    <div id="gh-badge"></div>
+  </div>
+
+  <div class="game-arena">
+    <div class="box-container">
+      <div class="box-inner" id="player-box-inner" style="width:fit-content">
+        <!-- BACK (default visible) -->
+        <div class="box-face box-back" id="player-box-back">
+          <div class="wood-grain"></div>
+          <div class="box-label">ORDEM SECRETA — ARRASTE PARA REORDENAR</div>
+          <div class="bottles-row" id="player-bottles"></div>
+        </div>
+        <!-- FRONT (revealed after confirm) -->
+        <div class="box-front-face" id="player-box-front">
+          <div class="reveal-score" id="reveal-score">0/5</div>
+          <div class="reveal-label">ACERTOS</div>
+          <div class="reveal-bottles-row" id="reveal-bottles"></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:24px;align-items:center">
+      <div class="move-indicator">
+        <div class="move-dot" id="move-dot-0"></div>
+        <div class="move-label" id="move-label">0 / 1 movimentos</div>
+      </div>
+      <button class="btn btn-gold" id="confirm-btn" onclick="confirmGuess()" disabled>
+        ✅ Confirmar ordem
+      </button>
+    </div>
+    <div id="game-hint" style="font-size:13px;color:rgba(245,237,214,.35);text-align:center">
+      Arraste as garrafas para trocar de posição. Você só pode fazer 1 troca!
+    </div>
+  </div>
+</div>
+
+<!-- ====== RESULT ====== -->
+<div id="screen-result" class="screen" style="align-items:center;justify-content:center;background:radial-gradient(ellipse at center,#1a1a1a,#0d0d0d)">
+  <div class="result-card">
+    <div class="result-trophy" id="res-trophy">🏆</div>
+    <div class="result-title" id="res-title">Parabéns!</div>
+    <div class="result-sub" id="res-sub">Equipe Alpha acertou tudo!</div>
+    <div class="result-big-score" id="res-score">5/5</div>
+    <div class="result-score-label">acertos</div>
+    <div id="res-bottles" style="display:flex;gap:8px;justify-content:center;margin-bottom:32px"></div>
+  </div>
+</div>
+
+<!-- ====== PROJECTOR ====== -->
+<div id="screen-projector" class="screen">
+  <div class="projector-header">
+    <div>
+      <div class="proj-title">🏆 TORNEIO DAS GARRAFAS</div>
+      <div class="proj-round" id="proj-round-label">RODADA 1</div>
+    </div>
+    <div class="proj-timer" id="proj-timer">—</div>
+    <button class="btn btn-outline btn-sm" onclick="show('screen-landing')">Sair</button>
+  </div>
+
+  <div class="projector-arena" id="proj-arena">
+    <!-- rendered dynamically -->
+  </div>
+
+  <div class="proj-bracket" id="proj-bracket-area" style="display:none">
+    <div class="bracket-title">EQUIPES</div>
+    <div class="bracket-rounds" id="proj-bracket-rounds"></div>
+  </div>
+</div>
+
+<!-- ====== ADMIN ====== -->
+<div id="screen-admin" class="screen">
+  <div class="admin-header">
+    <div class="admin-logo">🏆 Admin</div>
+    <div class="admin-tab active" id="tab-btn-setup" onclick="adminTab('setup')">Equipes & Config</div>
+    <div class="admin-tab" id="tab-btn-monitor" onclick="adminTab('monitor')">Monitor</div>
+    <div style="margin-left:auto;display:flex;gap:10px;align-items:center">
+      <span id="admin-game-status" class="status-pill off">Parado</span>
+      <button class="btn btn-outline btn-sm admin-exit" onclick="show('screen-landing')">Sair</button>
+    </div>
+  </div>
+
+  <div class="admin-body">
+    <div class="admin-content">
+
+      <!-- SETUP TAB -->
+      <div id="admin-tab-setup">
+        <div class="section-card">
+          <div class="section-title">Equipes</div>
+          <div class="section-sub">Adicione até 8 equipes. Jogadores entram digitando o nome da equipe.</div>
+          <div class="teams-grid" id="teams-grid"></div>
+          <div class="add-team-row">
+            <input class="input-field" type="text" id="new-team" placeholder="Nome da nova equipe" style="flex:1" onkeydown="if(event.key==='Enter')addTeam()">
+            <button class="btn btn-gold" onclick="addTeam()">+ Adicionar</button>
+          </div>
+        </div>
+
+        <div class="section-card">
+          <div class="section-title">Configurações</div>
+          <div class="config-grid">
+            <div>
+              <label class="field-label" style="display:block;margin-bottom:8px">Nº de garrafas</label>
+              <select class="input-field" id="cfg-bottles">
+                <option value="3">3 garrafas</option>
+                <option value="4">4 garrafas</option>
+                <option value="5" selected>5 garrafas</option>
+                <option value="6">6 garrafas</option>
+                <option value="7">7 garrafas</option>
+              </select>
+            </div>
+            <div>
+              <label class="field-label" style="display:block;margin-bottom:8px">Tempo por partida</label>
+              <select class="input-field" id="cfg-time">
+                <option value="0">Sem limite</option>
+                <option value="60">1 minuto</option>
+                <option value="90">1:30</option>
+                <option value="120" selected>2 minutos</option>
+                <option value="180">3 minutos</option>
+                <option value="300">5 minutos</option>
+              </select>
+            </div>
+            <div>
+              <label class="field-label" style="display:block;margin-bottom:8px">Senha de admin</label>
+              <input class="input-field" type="text" id="cfg-pass" value="admin123">
+            </div>
+          </div>
+        </div>
+
+        <div class="section-card">
+          <div class="section-title">Controles do jogo</div>
+          <div class="action-row">
+            <button class="btn btn-success" onclick="startMatch()">▶ Iniciar partida</button>
+            <button class="btn btn-outline" onclick="shuffleAll()">🔀 Embaralhar ordens</button>
+            <button class="btn btn-danger" onclick="resetAll()">↺ Resetar tudo</button>
+          </div>
+          <div class="kbd-hints" style="margin-top:16px">
+            <div class="kbd-hint"><kbd>Space</kbd> Iniciar partida</div>
+            <div class="kbd-hint"><kbd>R</kbd> Embaralhar</div>
+          </div>
+          <div id="setup-feedback" style="margin-top:12px;font-size:13px;color:rgba(245,237,214,.4)"></div>
+        </div>
+      </div>
+
+      <!-- MONITOR TAB -->
+      <div id="admin-tab-monitor" style="display:none">
+        <div class="section-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <div class="section-title" style="margin:0">Partidas em andamento</div>
+            <button class="btn btn-outline btn-sm" onclick="renderMonitor()">🔄 Atualizar</button>
+          </div>
+          <div class="monitor-grid" id="monitor-grid"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// ========== AUDIO ==========
+const AC = window.AudioContext || window.webkitAudioContext;
+let ac;
+function getAC(){ if(!ac && AC) ac = new AC(); return ac; }
+function beep(freq=440, dur=0.1, vol=0.3, type='sine'){
+  try {
+    const a = getAC(); if(!a) return;
+    const o = a.createOscillator(), g = a.createGain();
+    o.connect(g); g.connect(a.destination);
+    o.frequency.value = freq;
+    o.type = type;
+    g.gain.setValueAtTime(vol, a.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, a.currentTime + dur);
+    o.start(); o.stop(a.currentTime + dur);
+  } catch(e){}
+}
+function playSuccess(){ [523,659,784,1047].forEach((f,i)=>setTimeout(()=>beep(f,.15,.25),i*80)); }
+function playWrong(){ [300,250].forEach((f,i)=>setTimeout(()=>beep(f,.2,.2,'square'),i*120)); }
+function playClick(){ beep(800,.04,.15); }
+function playReveal(){ [220,330,440,550,660].forEach((f,i)=>setTimeout(()=>beep(f,.12,.18),i*60)); }
+
+// ========== STATE ==========
+const BOTTLE_EMOJIS=['🍾','🍶','🫙','🍯','🧴','🍺','🧪'];
+const TEAM_COLORS=['#c0392b','#1a6aab','#1a7a3a','#8e24aa','#e67e22','#00838f','#ad1457','#558b2f'];
+let S;
+function defaultState(){
+  return {
+    teams:[],numBottles:5,adminPass:'admin123',timerSeconds:120,
+    matches:[],currentRound:0,gameStarted:false,bracket:[],
+    currentPlayer:null
+  };
+}
+function save(){ try{localStorage.setItem('garrafas2',JSON.stringify(S));}catch(e){} }
+function load(){
+  try{ const d=localStorage.getItem('garrafas2'); S=d?JSON.parse(d):defaultState(); }
+  catch(e){ S=defaultState(); }
+  if(!S.teams) S.teams=[];
+  if(!S.matches) S.matches=[];
+  if(!S.numBottles) S.numBottles=5;
+  if(!S.adminPass) S.adminPass='admin123';
+  if(!S.timerSeconds && S.timerSeconds!==0) S.timerSeconds=120;
+  if(!S.currentRound) S.currentRound=0;
+}
+load();
+routeFromLink();
+
+// ========== NOTIFICATION ==========
+let notifTimer;
+function notify(msg, type='gold'){
+  const el=document.getElementById('notif');
+  el.textContent=msg; el.className='notif '+type+' show';
+  clearTimeout(notifTimer);
+  notifTimer=setTimeout(()=>el.classList.remove('show'),3000);
+}
+
+// ========== SCREENS ==========
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function routeFromLink(){
+  const route=(location.search+location.hash).toLowerCase();
+  if(route.includes('admin')) setTimeout(()=>show('screen-admin-login'),0);
+}
+
+// ========== LOGIN ==========
+function doLogin(){
+  playClick();
+  const name=document.getElementById('login-team').value.trim();
+  const err=document.getElementById('login-err');
+  err.style.display='none';
+  if(!name){err.textContent='Digite o nome da equipe.';err.style.display='block';return;}
+  const team=S.teams.find(t=>t.name.toLowerCase()===name.toLowerCase());
+  if(!team){err.textContent='Equipe não encontrada. Confira o nome com o professor.';err.style.display='block';beep(200,.3,.3,'sawtooth');return;}
+  S.currentPlayer=team;
+  const match=getMatchForTeam(team.id);
+  if(!match||!S.gameStarted){
+    document.getElementById('waiting-badge').textContent='👋 '+team.name;
+    document.getElementById('waiting-badge').style.cssText='background:rgba(245,200,66,.1);color:var(--gold);border:1px solid rgba(245,200,66,.2);padding:8px 20px;border-radius:50px;font-weight:600;font-size:15px;margin-bottom:24px';
+    document.getElementById('waiting-match').textContent=match?'Aguardando início da partida...':'Aguardando o administrador preparar o jogo...';
+    show('screen-waiting');
+    return;
+  }
+  enterGame(team,match);
+}
+
+function checkStatus(){
+  if(!S.currentPlayer) return;
+  load();
+  const match=getMatchForTeam(S.currentPlayer.id);
+  if(match&&S.gameStarted) enterGame(S.currentPlayer,match);
+  else notify('Ainda aguardando o admin iniciar...','gold');
+}
+
+function getMatchForTeam(tid){
+  return S.matches.find(m=>m.round===S.currentRound&&(m.teamA===tid||m.teamB===tid));
+}
+
+// ========== GAME ==========
+let playerOrder=[], dragSrc=null, movesMade=0, gameTimerInterval=null;
+
+function enterGame(team,match){
+  const isA=match.teamA===team.id;
+  const result=isA?match.resultA:match.resultB;
+  if(result!==undefined){ showResult(team,result,S.numBottles,isA?match.orderA:match.orderB,playerOrder); return; }
+
+  document.getElementById('gh-title').textContent='🍾 '+team.name;
+  const opp=S.teams.find(t=>t.id===(isA?match.teamB:match.teamA));
+  document.getElementById('gh-sub').textContent=opp?'Contra '+opp.name:'Jogo da equipe';
+
+  playerOrder=[...(isA?match.orderA:match.orderB)];
+  movesMade=0;
+  document.getElementById('move-dot-0').classList.remove('used');
+  document.getElementById('move-label').textContent='0 / 1 movimentos';
+  document.getElementById('confirm-btn').disabled=true;
+  document.getElementById('game-hint').textContent='Arraste as garrafas para trocar de posição. Você só pode fazer 1 troca!';
+
+  // reset flip
+  const bi=document.getElementById('player-box-inner');
+  bi.classList.remove('flipped');
+  document.getElementById('player-box-front').style.display='';
+
+  renderPlayerBottles(false);
+  startGameTimer(match);
+  show('screen-game');
+}
+
+function startGameTimer(match){
+  clearInterval(gameTimerInterval);
+  const total=S.timerSeconds;
+  if(!total){document.getElementById('game-timer').textContent='∞';return;}
+  let left=total;
+  function tick(){
+    const min=Math.floor(left/60), sec=left%60;
+    const el=document.getElementById('game-timer');
+    el.textContent=min+':'+(sec<10?'0':'')+sec;
+    if(left<=10){el.classList.add('urgent'); beep(880,.05,.1);}
+    else el.classList.remove('urgent');
+    if(left<=0){clearInterval(gameTimerInterval);autoConfirm();}
+    left--;
+  }
+  tick();
+  gameTimerInterval=setInterval(tick,1000);
+}
+
+function autoConfirm(){
+  notify('⏰ Tempo esgotado! Confirmando automaticamente...','red');
+  confirmGuess();
+}
+
+function renderPlayerBottles(locked){
+  const row=document.getElementById('player-bottles');
+  row.innerHTML='';
+  playerOrder.forEach((b,i)=>{
+    const slot=document.createElement('div');
+    slot.className='bottle-slot';
+    slot.innerHTML=`<div class="slot-num">Pos. ${i+1}</div>`;
+    const bottle=document.createElement('div');
+    bottle.className='bottle bottle-'+b+(locked?' locked':'');
+    bottle.dataset.idx=i;
+    bottle.innerHTML=`
+      <div class="bottle-cap"></div>
+      <div class="bottle-neck"></div>
+      <div class="bottle-liquid"></div>
+      <div class="bottle-label"><div class="bottle-id">${String.fromCharCode(65+b)}</div></div>
+    `;
+    if(!locked){
+      bottle.draggable=true;
+      bottle.addEventListener('dragstart',e=>{
+        dragSrc=i;
+        setTimeout(()=>bottle.classList.add('dragging'),0);
+        playClick();
+      });
+      bottle.addEventListener('dragend',()=>bottle.classList.remove('dragging'));
+      bottle.addEventListener('dragover',e=>{e.preventDefault();bottle.classList.add('drag-over');});
+      bottle.addEventListener('dragleave',()=>bottle.classList.remove('drag-over'));
+      bottle.addEventListener('drop',e=>{
+        e.preventDefault();
+        bottle.classList.remove('drag-over');
+        if(dragSrc===null||dragSrc===i) return;
+        if(movesMade>=1){notify('Você já fez 1 movimento! Confirme sua resposta.','red');beep(200,.2,.2);return;}
+        const tmp=playerOrder[dragSrc];
+        playerOrder[dragSrc]=playerOrder[i];
+        playerOrder[i]=tmp;
+        movesMade++;
+        document.getElementById('move-dot-0').classList.add('used');
+        document.getElementById('move-label').textContent='1 / 1 movimentos';
+        document.getElementById('confirm-btn').disabled=false;
+        document.getElementById('game-hint').textContent='Movimento feito! Revise a ordem e confirme quando estiver pronto.';
+        beep(660,.08,.2);
+        renderPlayerBottles(false);
+      });
+    }
+    slot.appendChild(bottle);
+    row.appendChild(slot);
+  });
+}
+
+function confirmGuess(){
+  clearInterval(gameTimerInterval);
+  playClick();
+  const match=getMatchForTeam(S.currentPlayer.id);
+  if(!match) return;
+  const isA=match.teamA===S.currentPlayer.id;
+  const correct=isA?match.orderA:match.orderB;
+  let hits=0;
+  playerOrder.forEach((b,i)=>{ if(b===correct[i]) hits++; });
+  if(isA) match.resultA=hits; else match.resultB=hits;
+  if(!match.teamB){
+    match.winner=hits===S.numBottles?match.teamA:undefined;
+  } else if(match.resultA!==undefined&&match.resultB!==undefined){
+    if(match.resultA>match.resultB) match.winner=match.teamA;
+    else if(match.resultB>match.resultA) match.winner=match.teamB;
+    else match.winner='draw';
+  }
+  save();
+
+  // flip the box
+  const bi=document.getElementById('player-box-inner');
+  document.getElementById('reveal-score').textContent=hits+'/'+S.numBottles;
+  const rb=document.getElementById('reveal-bottles');
+  rb.innerHTML='';
+  playerOrder.forEach((b,i)=>{
+    const ok=correct[i]===b;
+    const d=document.createElement('div');
+    d.className='reveal-bottle-mini bottle-'+b+(ok?' correct':' wrong');
+    d.innerHTML=BOTTLE_EMOJIS[b]+(ok?'<div class="reveal-check">✓</div>':'');
+    rb.appendChild(d);
+  });
+
+  setTimeout(()=>{
+    bi.classList.add('flipped');
+    playReveal();
+    setTimeout(()=>{
+      if(hits===S.numBottles) playSuccess(); else playWrong();
+      setTimeout(()=>showResult(S.currentPlayer,hits,S.numBottles,correct,playerOrder),1200);
+    },400);
+  },200);
+}
+
+function showResult(team,hits,total,correct,guess){
+  const pct=hits/total;
+  document.getElementById('res-trophy').textContent=pct===1?'🏆':pct>=.6?'🥈':'😅';
+  document.getElementById('res-title').textContent=pct===1?'PERFEITO!':hits>0?hits+' ACERTO'+(hits>1?'S':''):'ZERO ACERTOS';
+  document.getElementById('res-sub').textContent=pct===1?'Parabéns, '+team.name+'! Ordem completamente correta!':'Acertou '+hits+' de '+total+' posições.';
+  document.getElementById('res-score').textContent=hits+'/'+total;
+  const rb=document.getElementById('res-bottles');
+  rb.innerHTML='';
+  if(guess){
+    guess.forEach((b,i)=>{
+      const ok=correct&&correct[i]===b;
+      const d=document.createElement('div');
+      d.className='reveal-bottle-mini bottle-'+b+(ok?' correct':' wrong');
+      d.style.width='44px';d.style.height='60px';d.style.borderRadius='8px 8px 5px 5px';
+      d.innerHTML=BOTTLE_EMOJIS[b]+(ok?'<div class="reveal-check">✓</div>':'');
+      rb.appendChild(d);
+    });
+  }
+  show('screen-result');
+}
+
+// ========== PROJECTOR ==========
+let projTimer;
+function enterProjector(){
+  load();
+  renderProjector();
+  show('screen-projector');
+  startProjectorUpdates();
+}
+
+function startProjectorUpdates(){
+  clearInterval(projTimer);
+  projTimer=setInterval(()=>{ load(); renderProjector(); },3000);
+}
+
+function renderProjector(){
+  const round=S.currentRound;
+  document.getElementById('proj-round-label').textContent='RODADA '+(round+1);
+
+  // Timer
+  const tEl=document.getElementById('proj-timer');
+  if(!S.timerSeconds) tEl.textContent='∞';
+
+  // Get current matches
+  const matches=S.matches.filter(m=>m.round===round);
+  const arena=document.getElementById('proj-arena');
+
+  if(!matches.length){
+    arena.innerHTML='<div style="grid-column:1/-1;text-align:center;color:rgba(245,237,214,.3);font-family:\'Bebas Neue\';font-size:32px;letter-spacing:3px">AGUARDANDO INÍCIO DO JOGO</div>';
+    document.getElementById('proj-bracket-area').style.display='none';
+  } else {
+    // Show first match (main display)
+    const m=matches[0];
+    const tA=S.teams.find(t=>t.id===m.teamA)||{name:'?',id:'',code:''};
+    const tB=S.teams.find(t=>t.id===m.teamB)||{name:'?',id:'',code:''};
+    const colorA=TEAM_COLORS[S.teams.indexOf(tA)%TEAM_COLORS.length]||'#c0392b';
+    const colorB=TEAM_COLORS[S.teams.indexOf(tB)%TEAM_COLORS.length]||'#1a6aab';
+
+    const statusA=m.resultA!==undefined?'done':S.gameStarted?'playing':'waiting';
+    const statusB=m.resultB!==undefined?'done':S.gameStarted?'playing':'waiting';
+    const statusTextA=m.resultA!==undefined?'✅ Jogou':S.gameStarted?'🎮 Jogando':'⏳ Aguardando';
+    const statusTextB=m.resultB!==undefined?'✅ Jogou':S.gameStarted?'🎮 Jogando':'⏳ Aguardando';
+
+    if(!m.teamB){
+      arena.style.gridTemplateColumns='repeat(auto-fit,minmax(260px,1fr))';
+      arena.innerHTML=matches.map((match,idx)=>{
+        const team=S.teams.find(t=>t.id===match.teamA)||{name:'?'};
+        const color=TEAM_COLORS[idx%TEAM_COLORS.length]||'#c0392b';
+        const status=match.resultA!==undefined?'done':S.gameStarted?'playing':'waiting';
+        const statusText=match.resultA!==undefined?'✅ Jogou':S.gameStarted?'🎮 Jogando':'⏳ Aguardando';
+        return `<div class="proj-team-side">
+          <div class="proj-team-name" style="color:${color}">${team.name}</div>
+          <div class="proj-box">
+            <div class="wood-grain"></div>
+            <div class="box-label" style="text-align:center;margin-bottom:12px">${match.resultA!==undefined?'RESULTADO':'CAIXA FECHADA'}</div>
+            ${match.resultA!==undefined
+              ? `<div style="text-align:center"><div style="font-family:'Bebas Neue';font-size:64px;color:var(--gold)">${match.resultA}/${S.numBottles}</div><div style="font-size:12px;color:rgba(245,237,214,.4);letter-spacing:2px">ACERTOS</div></div>`
+              : `<div class="proj-bottles">${renderProjBottles(match.orderA||[], S.numBottles, false)}</div>`
+            }
+          </div>
+          <div class="proj-score-big" style="color:${color}">${match.resultA!==undefined?match.resultA+'/'+S.numBottles:'—'}</div>
+          <div class="proj-status ${status}">${statusText}</div>
+        </div>`;
+      }).join('');
+      document.getElementById('proj-bracket-area').style.display='none';
+      return;
+    }
+
+    arena.style.gridTemplateColumns='1fr auto 1fr';
+    arena.innerHTML=`
+      <div class="proj-team-side">
+        <div class="proj-team-name" style="color:${colorA}">${tA.name}</div>
+        <div class="proj-box">
+          <div class="wood-grain"></div>
+          <div class="box-label" style="text-align:center;margin-bottom:12px">${m.resultA!==undefined?'RESULTADO':'CAIXA FECHADA'}</div>
+          ${m.resultA!==undefined
+            ? `<div style="text-align:center"><div style="font-family:'Bebas Neue';font-size:64px;color:var(--gold)">${m.resultA}/${S.numBottles}</div><div style="font-size:12px;color:rgba(245,237,214,.4);letter-spacing:2px">ACERTOS</div></div>`
+            : `<div class="proj-bottles">${renderProjBottles(m.orderA||[], S.numBottles, m.resultA!==undefined)}</div>`
+          }
+        </div>
+        <div class="proj-score-big" style="color:${colorA}">${m.resultA!==undefined?m.resultA+'/'+S.numBottles:'—'}</div>
+        <div class="proj-status ${statusA}">${statusTextA}</div>
+      </div>
+      <div class="vs-divider">
+        <div class="vs-line"></div>
+        <div class="vs-text">VS</div>
+        <div class="vs-line"></div>
+        ${m.winner?`<div style="font-family:'Bebas Neue';font-size:18px;color:var(--gold);letter-spacing:2px;margin-top:8px">VENCEDOR<br><span style="font-size:24px">${m.winner==='draw'?'EMPATE':(S.teams.find(t=>t.id===m.winner)||{name:'?'}).name}</span></div>`:''}
+      </div>
+      <div class="proj-team-side">
+        <div class="proj-team-name" style="color:${colorB}">${tB.name}</div>
+        <div class="proj-box">
+          <div class="wood-grain"></div>
+          <div class="box-label" style="text-align:center;margin-bottom:12px">${m.resultB!==undefined?'RESULTADO':'CAIXA FECHADA'}</div>
+          ${m.resultB!==undefined
+            ? `<div style="text-align:center"><div style="font-family:'Bebas Neue';font-size:64px;color:var(--gold)">${m.resultB}/${S.numBottles}</div><div style="font-size:12px;color:rgba(245,237,214,.4);letter-spacing:2px">ACERTOS</div></div>`
+            : `<div class="proj-bottles">${renderProjBottles(m.orderB||[], S.numBottles, m.resultB!==undefined)}</div>`
+          }
+        </div>
+        <div class="proj-score-big" style="color:${colorB}">${m.resultB!==undefined?m.resultB+'/'+S.numBottles:'—'}</div>
+        <div class="proj-status ${statusB}">${statusTextB}</div>
+      </div>
+    `;
+    document.getElementById('proj-bracket-area').style.display='none';
+  }
+}
+
+function renderProjBottles(order, n, revealed){
+  return order.slice(0,n).map(b=>`
+    <div class="proj-bottle bottle-${b}" style="opacity:${revealed?1:.7}">
+      <div class="proj-bottle-cap"></div>
+      <div class="proj-bottle-neck bottle-${b}"></div>
+      <div class="proj-bottle-emoji">${BOTTLE_EMOJIS[b]||'🍾'}</div>
+      <div class="proj-bottle-id">${String.fromCharCode(65+b)}</div>
+    </div>
+  `).join('');
+}
+
+function renderProjBracket(){
+  const rounds={};
+  S.matches.forEach(m=>{ if(!rounds[m.round]) rounds[m.round]=[]; rounds[m.round].push(m); });
+  const el=document.getElementById('proj-bracket-rounds');
+  el.innerHTML=Object.keys(rounds).map(r=>`
+    <div class="bracket-round">
+      <div class="bracket-round-title">Rodada ${parseInt(r)+1}</div>
+      ${rounds[r].map(m=>{
+        const tA=S.teams.find(t=>t.id===m.teamA)||{name:'?'};
+        const tB=S.teams.find(t=>t.id===m.teamB)||{name:'?'};
+        const wId=m.winner;
+        return `<div class="bracket-match">
+          <div class="bracket-match-team ${wId===m.teamA?'winner':''}">${tA.name} ${m.resultA!==undefined?'<span style="opacity:.5">'+m.resultA+'</span>':''}</div>
+          <div class="bracket-match-team ${wId===m.teamB?'winner':''}">${tB.name} ${m.resultB!==undefined?'<span style="opacity:.5">'+m.resultB+'</span>':''}</div>
+        </div>`;
+      }).join('')}
+    </div>
+  `).join('');
+}
+
+// ========== ADMIN ==========
+function doAdminLogin(){
+  load();
+  const p=document.getElementById('admin-pass-in').value;
+  const err=document.getElementById('admin-err');
+  if(p===S.adminPass||p==='admin123'){
+    document.getElementById('cfg-bottles').value=S.numBottles;
+    document.getElementById('cfg-time').value=S.timerSeconds;
+    document.getElementById('cfg-pass').value=S.adminPass;
+    renderTeamsGrid();
+    renderMonitor();
+    updateAdminStatus();
+    show('screen-admin');
+  } else {
+    err.textContent='Senha incorreta.';err.style.display='block';
+    beep(200,.3,.3,'sawtooth');
+  }
+}
+
+function adminTab(t){
+  ['setup','monitor'].forEach(tab=>{
+    document.getElementById('admin-tab-'+tab).style.display=tab===t?'block':'none';
+    const btn=document.getElementById('tab-btn-'+tab);
+    btn.classList.toggle('active',tab===t);
+  });
+  if(t==='monitor') renderMonitor();
+}
+
+function addTeam(){
+  playClick();
+  const name=document.getElementById('new-team').value.trim();
+  if(!name) return;
+  if(S.teams.length>=8){notify('Máximo 8 equipes!','red');return;}
+  if(S.teams.find(t=>t.name.toLowerCase()===name.toLowerCase())){notify('Equipe já existe!','red');return;}
+  const code=Math.random().toString(36).substr(2,5).toUpperCase();
+  S.teams.push({id:'t'+Date.now()+Math.random(),name,code});
+  document.getElementById('new-team').value='';
+  save();
+  renderTeamsGrid();
+  notify('✅ '+name+' adicionada!','green');
+}
+
+function removeTeam(id){
+  S.teams=S.teams.filter(t=>t.id!==id);
+  save(); renderTeamsGrid();
+}
+
+function renderTeamsGrid(){
+  const el=document.getElementById('teams-grid');
+  if(!S.teams.length){el.innerHTML='<p style="font-size:13px;color:rgba(245,237,214,.3);grid-column:1/-1">Nenhuma equipe ainda.</p>';return;}
+  el.innerHTML=S.teams.map((t,i)=>`
+    <div class="team-item">
+      <div>
+        <div class="team-item-name" style="color:${TEAM_COLORS[i%TEAM_COLORS.length]}">${t.name}</div>
+        <div style="font-size:12px;color:rgba(245,237,214,.3);margin-top:2px">Entrada: digitar este nome</div>
+      </div>
+      <button class="team-item-remove" onclick="removeTeam('${t.id}')">✕</button>
+    </div>
+  `).join('');
+}
+
+function shuffleArr(a){ const b=[...a]; for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];} return b; }
+
+function shuffleAll(){
+  playClick();
+  const n=parseInt(document.getElementById('cfg-bottles').value)||5;
+  S.numBottles=n;
+  prepareGamesForTeams();
+  S.matches.forEach(m=>{
+    m.orderA=shuffleArr([...Array(n).keys()]);
+    if(m.teamB) m.orderB=shuffleArr([...Array(n).keys()]);
+    delete m.resultA; delete m.resultB; delete m.winner;
+  });
+  save();
+  notify('🔀 Ordens embaralhadas!','gold');
+  document.getElementById('setup-feedback').textContent='✅ Ordens embaralhadas para '+S.matches.length+' equipes.';
+}
+
+function startMatch(){
+  playClick();
+  S.numBottles=parseInt(document.getElementById('cfg-bottles').value)||5;
+  S.timerSeconds=parseInt(document.getElementById('cfg-time').value)||0;
+  S.adminPass=document.getElementById('cfg-pass').value||'admin123';
+  if(!S.teams.length){notify('Adicione pelo menos 1 equipe!','red');return;}
+  prepareGamesForTeams();
+  S.gameStarted=true;
+  save();
+  updateAdminStatus();
+  renderMonitor();
+  notify('▶ Jogo iniciado!','green');
+  document.getElementById('setup-feedback').textContent='▶ Jogo em andamento. Jogadores entram apenas com o nome da equipe.';
+  playSuccess();
+}
+
+function prepareGamesForTeams(){
+  const n=S.numBottles;
+  S.currentRound=0;
+  S.matches=S.teams.map((team,i)=>{
+    const existing=S.matches.find(m=>m.teamA===team.id&&!m.teamB);
+    return {
+      id:existing?.id||'solo'+team.id,
+      round:0,
+      teamA:team.id,
+      teamB:null,
+      orderA:existing?.orderA&&existing.orderA.length===n?existing.orderA:shuffleArr([...Array(n).keys()]),
+      resultA:existing?.resultA,
+      winner:existing?.winner
+    };
+  });
+}
+
+function advanceRound(){
+  playClick();
+  const cur=S.matches.filter(m=>m.round===S.currentRound);
+  const pending=cur.filter(m=>!m.winner);
+  if(pending.length){
+    // Auto-decide empate para quem não jogou
+    pending.forEach(m=>{
+      if(m.resultA===undefined) m.resultA=0;
+      if(m.resultB===undefined) m.resultB=0;
+      if(m.resultA>m.resultB) m.winner=m.teamA;
+      else if(m.resultB>m.resultA) m.winner=m.teamB;
+      else m.winner=m.teamA;
+    });
+  }
+  const winners=cur.map(m=>m.winner==='draw'?m.teamA:m.winner).filter(Boolean);
+  if(winners.length<2){notify('Torneio finalizado! Vencedor: '+(S.teams.find(t=>t.id===winners[0])||{name:'?'}).name,'gold');return;}
+  const nextRound=S.currentRound+1;
+  const n=S.numBottles;
+  for(let i=0;i<winners.length;i+=2){
+    if(i+1<winners.length){
+      S.matches.push({
+        id:'m'+Date.now()+i,round:nextRound,
+        teamA:winners[i],teamB:winners[i+1],
+        orderA:shuffleArr([...Array(n).keys()]),
+        orderB:shuffleArr([...Array(n).keys()])
+      });
+    }
+  }
+  S.currentRound=nextRound;
+  S.gameStarted=false;
+  save();
+  renderAdminBracket();
+  renderMonitor();
+  updateAdminStatus();
+  notify('⏭ Avançou para a rodada '+(S.currentRound+1),'gold');
+}
+
+function resetAll(){
+  if(!confirm('Resetar partidas e resultados? As equipes cadastradas serão mantidas.')) return;
+  S.matches=[];S.gameStarted=false;S.currentRound=0;S.bracket=[];
+  save(); renderTeamsGrid(); renderMonitor(); updateAdminStatus();
+  notify('↺ Tudo resetado.','red');
+}
+
+function updateAdminStatus(){
+  const el=document.getElementById('admin-game-status');
+  el.textContent=S.gameStarted?'Em andamento':'Parado';
+  el.className='status-pill '+(S.gameStarted?'on':'off');
+}
+
+function generateBracket(){
+  playClick();
+  if(S.teams.length<2){notify('Adicione pelo menos 2 equipes!','red');return;}
+  const n=parseInt(document.getElementById('cfg-bottles').value)||5;
+  S.numBottles=n;
+  let teams=[...S.teams];
+  while(teams.length%2!==0) teams.push({id:'bye'+teams.length,name:'BYE',code:''});
+  const shuffled=shuffleArr(teams);
+  S.matches=[];S.currentRound=0;S.gameStarted=false;
+  for(let i=0;i<shuffled.length;i+=2){
+    S.matches.push({
+      id:'m'+Date.now()+i,round:0,
+      teamA:shuffled[i].id,teamB:shuffled[i+1].id,
+      orderA:shuffleArr([...Array(n).keys()]),
+      orderB:shuffleArr([...Array(n).keys()])
+    });
+  }
+  save(); renderAdminBracket(); updateAdminStatus();
+  notify('🎲 Chaveamento gerado!','gold');
+  playSuccess();
+}
+
+function renderAdminBracket(){
+  const el=document.getElementById('admin-bracket');
+  if(!el) return;
+  if(!S.matches.length){el.innerHTML='<p style="font-size:13px;color:rgba(245,237,214,.3)">Clique em "Sortear chaves" para gerar o chaveamento.</p>';return;}
+  const rounds={};
+  S.matches.forEach(m=>{ if(!rounds[m.round]) rounds[m.round]=[]; rounds[m.round].push(m); });
+  el.innerHTML=Object.keys(rounds).map(r=>`
+    <div class="bracket-col">
+      <div class="bracket-col-title">Rodada ${parseInt(r)+1}</div>
+      ${rounds[r].map(m=>{
+        const tA=S.teams.find(t=>t.id===m.teamA)||{name:'BYE',code:'-'};
+        const tB=S.teams.find(t=>t.id===m.teamB)||{name:'BYE',code:'-'};
+        const wId=m.winner;
+        return `<div class="bracket-card" style="border-color:${parseInt(r)===S.currentRound?'rgba(245,200,66,.2)':'rgba(255,255,255,.08)'}">
+          <div class="bracket-card-team ${wId===m.teamA?'winner':''}">
+            ${tA.name}
+            <span class="bracket-card-score">${m.resultA!==undefined?m.resultA+'/'+S.numBottles:tA.code||'-'}</span>
+          </div>
+          <div class="bracket-divider"></div>
+          <div class="bracket-card-team ${wId===m.teamB?'winner':''}">
+            ${tB.name}
+            <span class="bracket-card-score">${m.resultB!==undefined?m.resultB+'/'+S.numBottles:tB.code||'-'}</span>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+  `).join('');
+}
+
+function renderMonitor(){
+  const el=document.getElementById('monitor-grid');
+  const cur=S.matches.filter(m=>m.round===S.currentRound);
+  if(!cur.length){el.innerHTML='<p style="font-size:13px;color:rgba(245,237,214,.3)">Nenhuma partida na rodada atual.</p>';return;}
+  el.innerHTML=cur.map(m=>{
+    const tA=S.teams.find(t=>t.id===m.teamA)||{name:'?'};
+    const tB=S.teams.find(t=>t.id===m.teamB)||null;
+    const iA=S.teams.indexOf(tA),iB=S.teams.indexOf(tB);
+    const cA=TEAM_COLORS[iA%TEAM_COLORS.length]||'#c0392b';
+    const cB=TEAM_COLORS[iB%TEAM_COLORS.length]||'#1a6aab';
+    const sA=m.resultA!==undefined?'✅ Jogou':S.gameStarted?'🎮 Jogando':'⏳ Aguardando';
+    const sB=m.resultB!==undefined?'✅ Jogou':S.gameStarted?'🎮 Jogando':'⏳ Aguardando';
+    if(!tB){
+      return `<div class="monitor-card">
+        <div class="monitor-team" style="width:100%">
+          <div class="monitor-team-name" style="color:${cA}">${tA.name}</div>
+          <div class="monitor-team-score">${m.resultA!==undefined?m.resultA:'—'}</div>
+          <div class="monitor-team-status">${sA}</div>
+        </div>
+        ${m.winner?`<div style="text-align:center;padding:8px;background:rgba(245,200,66,.06);border-radius:8px;font-family:'Bebas Neue';font-size:18px;color:var(--gold);letter-spacing:2px">🏆 ${tA.name} acertou tudo</div>`:''}
+      </div>`;
+    }
+    return `<div class="monitor-card">
+      <div class="monitor-teams">
+        <div class="monitor-team">
+          <div class="monitor-team-name" style="color:${cA}">${tA.name}</div>
+          <div class="monitor-team-score">${m.resultA!==undefined?m.resultA:'—'}</div>
+          <div class="monitor-team-status">${sA}</div>
+        </div>
+        <div class="monitor-vs">VS</div>
+        <div class="monitor-team">
+          <div class="monitor-team-name" style="color:${cB}">${tB.name}</div>
+          <div class="monitor-team-score">${m.resultB!==undefined?m.resultB:'—'}</div>
+          <div class="monitor-team-status">${sB}</div>
+        </div>
+      </div>
+      ${m.winner?`<div style="text-align:center;padding:8px;background:rgba(245,200,66,.06);border-radius:8px;font-family:'Bebas Neue';font-size:18px;color:var(--gold);letter-spacing:2px">🏆 ${m.winner==='draw'?'EMPATE':(S.teams.find(t=>t.id===m.winner)||{name:'?'}).name}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+// ========== KEYBOARD SHORTCUTS ==========
+document.addEventListener('keydown',e=>{
+  if(document.getElementById('screen-admin').classList.contains('active')){
+    if(e.code==='Space'&&e.target.tagName!=='INPUT'){e.preventDefault();startMatch();}
+    if(e.code==='KeyR'&&e.target.tagName!=='INPUT') shuffleAll();
+  }
+});
+</script>
+</body>
+</html>
