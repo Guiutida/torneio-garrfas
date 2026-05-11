@@ -89,6 +89,10 @@ body {
   justify-content: center;
   flex-wrap: wrap;
 }
+.mode-cards.single {
+  max-width: 240px;
+  margin: 0 auto;
+}
 .mode-card {
   width: 200px;
   background: rgba(255,255,255,.04);
@@ -893,6 +897,25 @@ option { background: #1a1a1a; }
 .monitor-team-score { font-family: 'Bebas Neue'; font-size: 40px; color: var(--gold); line-height: 1; }
 .monitor-vs { font-family: 'Bebas Neue'; font-size: 24px; color: rgba(245,237,214,.2); }
 .monitor-team-status { font-size: 12px; color: rgba(245,237,214,.4); margin-top: 4px; }
+.queue-list {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.queue-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: rgba(245,200,66,.06);
+  border: 1px solid rgba(245,200,66,.15);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+.queue-name {
+  font-weight: 700;
+  color: var(--gold);
+}
 
 /* scroll */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
@@ -953,16 +976,11 @@ kbd {
     <div class="landing-bottles">🍾🍶🫙🍯🧴</div>
     <div class="landing-title">TORNEIO<br>DAS GARRAFAS</div>
     <div class="landing-sub">Descubra a ordem certa</div>
-    <div class="mode-cards">
+    <div class="mode-cards single">
       <div class="mode-card" onclick="show('screen-login')">
         <div class="icon">🎮</div>
-        <div class="label">Jogador</div>
+        <div class="label">Jogar</div>
         <div class="desc">Digite o nome da sua equipe e jogue</div>
-      </div>
-      <div class="mode-card" onclick="enterProjector()">
-        <div class="icon">📺</div>
-        <div class="label">Telão</div>
-        <div class="desc">Modo projetor para toda a sala ver</div>
       </div>
     </div>
   </div>
@@ -992,7 +1010,7 @@ kbd {
       <label class="field-label">Nome da equipe</label>
       <input class="input-field" type="text" id="login-team" placeholder="Ex: Equipe Alfa" onkeydown="if(event.key==='Enter')doLogin()">
     </div>
-    <button class="btn btn-gold btn-full" onclick="doLogin()">Entrar no jogo</button>
+    <button class="btn btn-gold btn-full" onclick="doLogin()">Jogar</button>
     <div class="error-msg" id="login-err" style="display:none"></div>
     <button class="btn btn-outline btn-full" style="margin-top:10px" onclick="show('screen-landing')">Voltar</button>
   </div>
@@ -1003,7 +1021,7 @@ kbd {
   <div class="waiting-box">
     <div class="waiting-pulse">⏳</div>
     <div class="waiting-title">Aguardando...</div>
-    <div class="waiting-sub">O administrador ainda não iniciou a partida</div>
+    <div class="waiting-sub">Sua equipe entrou na fila. Aguarde o organizador liberar.</div>
     <div id="waiting-badge" class="team-badge"></div>
     <div id="waiting-match" style="font-size:14px;color:rgba(245,237,214,.4);margin-bottom:24px"></div>
     <button class="btn btn-outline" onclick="checkStatus()">🔄 Verificar status</button>
@@ -1116,6 +1134,17 @@ kbd {
         </div>
 
         <div class="section-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <div>
+              <div class="section-title" style="margin:0">Fila para jogar</div>
+              <div class="section-sub" style="margin-top:6px">Quando a equipe entrar no site, ela aparece aqui.</div>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="refreshAdminMonitor()">🔄 Atualizar</button>
+          </div>
+          <div class="queue-list" id="queue-list-setup"></div>
+        </div>
+
+        <div class="section-card">
           <div class="section-title">Configurações</div>
           <div class="config-grid">
             <div>
@@ -1149,12 +1178,12 @@ kbd {
         <div class="section-card">
           <div class="section-title">Controles do jogo</div>
           <div class="action-row">
-            <button class="btn btn-success" onclick="startMatch()">▶ Iniciar partida</button>
+            <button class="btn btn-success" onclick="startMatch()">▶ Liberar próxima da fila</button>
             <button class="btn btn-outline" onclick="shuffleAll()">🔀 Embaralhar ordens</button>
             <button class="btn btn-danger" onclick="resetAll()">↺ Resetar tudo</button>
           </div>
           <div class="kbd-hints" style="margin-top:16px">
-            <div class="kbd-hint"><kbd>Space</kbd> Iniciar partida</div>
+            <div class="kbd-hint"><kbd>Space</kbd> Liberar fila</div>
             <div class="kbd-hint"><kbd>R</kbd> Embaralhar</div>
           </div>
           <div id="setup-feedback" style="margin-top:12px;font-size:13px;color:rgba(245,237,214,.4)"></div>
@@ -1165,8 +1194,15 @@ kbd {
       <div id="admin-tab-monitor" style="display:none">
         <div class="section-card">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-            <div class="section-title" style="margin:0">Partidas em andamento</div>
-            <button class="btn btn-outline btn-sm" onclick="renderMonitor()">🔄 Atualizar</button>
+            <div class="section-title" style="margin:0">Fila de jogadores</div>
+            <button class="btn btn-outline btn-sm" onclick="refreshAdminMonitor()">🔄 Atualizar</button>
+          </div>
+          <div class="queue-list" id="queue-list"></div>
+        </div>
+        <div class="section-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <div class="section-title" style="margin:0">Equipes liberadas</div>
+            <button class="btn btn-outline btn-sm" onclick="refreshAdminMonitor()">🔄 Atualizar</button>
           </div>
           <div class="monitor-grid" id="monitor-grid"></div>
         </div>
@@ -1206,6 +1242,7 @@ function defaultState(){
   return {
     teams:[],numBottles:5,adminPass:'admin123',timerSeconds:120,
     matches:[],currentRound:0,gameStarted:false,bracket:[],
+    waitingQueue:[],
     currentPlayer:null
   };
 }
@@ -1214,6 +1251,7 @@ function normalizeState(state){
   const next={...base,...(state||{})};
   if(!Array.isArray(next.teams)) next.teams=[];
   if(!Array.isArray(next.matches)) next.matches=[];
+  if(!Array.isArray(next.waitingQueue)) next.waitingQueue=[];
   if(!next.numBottles) next.numBottles=5;
   if(!next.adminPass) next.adminPass='admin123';
   if(!next.timerSeconds && next.timerSeconds!==0) next.timerSeconds=120;
@@ -1255,11 +1293,17 @@ routeFromLink();
 
 // ========== NOTIFICATION ==========
 let notifTimer;
+let adminMonitorTimer=null;
 function notify(msg, type='gold'){
   const el=document.getElementById('notif');
   el.textContent=msg; el.className='notif '+type+' show';
   clearTimeout(notifTimer);
   notifTimer=setTimeout(()=>el.classList.remove('show'),3000);
+}
+
+function startAdminMonitorUpdates(){
+  clearInterval(adminMonitorTimer);
+  adminMonitorTimer=setInterval(()=>refreshAdminMonitor(),2000);
 }
 
 // ========== SCREENS ==========
@@ -1281,14 +1325,19 @@ async function doLogin(){
   const err=document.getElementById('login-err');
   err.style.display='none';
   if(!name){err.textContent='Digite o nome da equipe.';err.style.display='block';return;}
-  const team=S.teams.find(t=>t.name.toLowerCase()===name.toLowerCase());
-  if(!team){err.textContent='Equipe não encontrada. Confira o nome com o professor.';err.style.display='block';beep(200,.3,.3,'sawtooth');return;}
+  let team=S.teams.find(t=>t.name.toLowerCase()===name.toLowerCase());
+  if(!team){
+    team={id:'t'+Date.now()+Math.random(),name,code:''};
+    S.teams.push(team);
+  }
   S.currentPlayer=team;
   const match=getMatchForTeam(team.id);
   if(!match||!S.gameStarted){
+    if(!S.waitingQueue.includes(team.id)) S.waitingQueue.push(team.id);
+    save();
     document.getElementById('waiting-badge').textContent='👋 '+team.name;
     document.getElementById('waiting-badge').style.cssText='background:rgba(245,200,66,.1);color:var(--gold);border:1px solid rgba(245,200,66,.2);padding:8px 20px;border-radius:50px;font-weight:600;font-size:15px;margin-bottom:24px';
-    document.getElementById('waiting-match').textContent=match?'Aguardando início da partida...':'Aguardando o administrador preparar o jogo...';
+    document.getElementById('waiting-match').textContent='Voce esta na fila. O organizador vai liberar sua vez.';
     show('screen-waiting');
     startWaitingAutoCheck();
     return;
@@ -1320,6 +1369,10 @@ function getMatchForTeam(tid){
   return S.matches.find(m=>m.round===S.currentRound&&(m.teamA===tid||m.teamB===tid));
 }
 
+function getTeamById(id){
+  return S.teams.find(t=>t.id===id);
+}
+
 // ========== GAME ==========
 let playerOrder=[], dragSrc=null, movesMade=0, gameTimerInterval=null;
 
@@ -1341,7 +1394,10 @@ function enterGame(team,match){
   movesMade=0;
   document.getElementById('move-dot-0').classList.remove('used');
   document.getElementById('move-label').textContent='0 / 1 movimentos';
-  document.getElementById('confirm-btn').disabled=true;
+  const confirmBtn=document.getElementById('confirm-btn');
+  confirmBtn.disabled=true;
+  confirmBtn.textContent='✅ Confirmar ordem';
+  confirmBtn.onclick=confirmGuess;
   document.getElementById('game-hint').textContent='Arraste as garrafas para trocar de posição. Você só pode fazer 1 troca!';
 
   // reset flip
@@ -1476,12 +1532,21 @@ async function confirmGuess(){
 
 function showResult(team,hits,total,correct,guess){
   const pct=hits/total;
-  document.getElementById('res-trophy').textContent=String(hits);
-  document.getElementById('res-title').textContent=pct===1?'ORDEM CERTA':'RESULTADO DA TENTATIVA';
-  document.getElementById('res-sub').textContent=pct===1?'Parabens, '+team.name+'! Voce acertou a ordem completa.':'Voce acertou '+hits+' de '+total+'. A ordem continua escondida.';
-  document.getElementById('res-score').textContent=hits+'/'+total;
-  document.getElementById('retry-btn').style.display=pct===1?'none':'inline-flex';
-  show('screen-result');
+  const hint=document.getElementById('game-hint');
+  const confirmBtn=document.getElementById('confirm-btn');
+  document.getElementById('move-label').textContent=hits+'/'+total+' acertos';
+  if(pct===1){
+    hint.textContent='Perfeito! '+team.name+' acertou a ordem completa.';
+    confirmBtn.disabled=true;
+    confirmBtn.textContent='Ordem certa';
+    show('screen-game');
+    return;
+  }
+  hint.textContent='Resultado: '+hits+' de '+total+' acertos. A ordem continua escondida.';
+  confirmBtn.disabled=false;
+  confirmBtn.textContent='Continuar tentando';
+  confirmBtn.onclick=retryAttempt;
+  show('screen-game');
 }
 
 async function retryAttempt(){
@@ -1645,6 +1710,7 @@ async function doAdminLogin(){
     renderTeamsGrid();
     renderMonitor();
     updateAdminStatus();
+    startAdminMonitorUpdates();
     show('screen-admin');
   } else {
     err.textContent='Senha incorreta.';err.style.display='block';
@@ -1720,18 +1786,34 @@ function startMatch(){
   S.numBottles=parseInt(document.getElementById('cfg-bottles').value)||5;
   S.timerSeconds=parseInt(document.getElementById('cfg-time').value)||0;
   S.adminPass=document.getElementById('cfg-pass').value||'admin123';
-  if(!S.teams.length){notify('Adicione pelo menos 1 equipe!','red');return;}
-  prepareGamesForTeams();
-  S.matches.forEach(m=>{
-    delete m.resultA; delete m.resultB; delete m.winner;
-  });
+  const firstQueued=S.waitingQueue.find(id=>getTeamById(id));
+  if(firstQueued){
+    releaseQueuedTeam(firstQueued);
+    return;
+  }
+  notify('Nenhuma equipe na fila. Peca para os jogadores clicarem em Jogar.','red');
+}
+
+function releaseQueuedTeam(teamId){
+  S.numBottles=parseInt(document.getElementById('cfg-bottles').value)||S.numBottles||5;
+  S.timerSeconds=parseInt(document.getElementById('cfg-time').value)||0;
+  S.adminPass=document.getElementById('cfg-pass').value||'admin123';
+  const team=getTeamById(teamId);
+  if(!team){notify('Equipe nao encontrada.','red');return;}
+  const n=S.numBottles;
+  const existing=getMatchForTeam(teamId);
+  const orderA=shuffleArr([...Array(n).keys()]);
+  const match=existing||{id:'solo'+team.id,round:S.currentRound||0,teamA:team.id,teamB:null};
+  match.orderA=orderA;
+  match.currentA=createStartingOrder(orderA);
+  delete match.resultA; delete match.resultB; delete match.winner;
+  if(!existing) S.matches.push(match);
+  S.waitingQueue=S.waitingQueue.filter(id=>id!==teamId);
   S.gameStarted=true;
   save();
-  updateAdminStatus();
   renderMonitor();
-  notify('▶ Jogo iniciado!','green');
-  document.getElementById('setup-feedback').textContent='▶ Jogo em andamento. Jogadores entram apenas com o nome da equipe.';
-  playSuccess();
+  updateAdminStatus();
+  notify('▶ '+team.name+' liberada para jogar!','green');
 }
 
 function prepareGamesForTeams(){
@@ -1803,7 +1885,7 @@ function advanceRound(){
 
 function resetAll(){
   if(!confirm('Resetar partidas e resultados? As equipes cadastradas serão mantidas.')) return;
-  S.matches=[];S.gameStarted=false;S.currentRound=0;S.bracket=[];
+  S.matches=[];S.waitingQueue=[];S.gameStarted=false;S.currentRound=0;S.bracket=[];
   save(); renderTeamsGrid(); renderMonitor(); updateAdminStatus();
   notify('↺ Tudo resetado.','red');
 }
@@ -1866,6 +1948,20 @@ function renderAdminBracket(){
 }
 
 function renderMonitor(){
+  const queues=[document.getElementById('queue-list'),document.getElementById('queue-list-setup')].filter(Boolean);
+  if(queues.length){
+    const queued=(S.waitingQueue||[]).map(id=>getTeamById(id)).filter(Boolean);
+    const html=queued.length?queued.map(team=>`
+      <div class="queue-item">
+        <div>
+          <div class="queue-name">${team.name}</div>
+          <div style="font-size:12px;color:rgba(245,237,214,.42);margin-top:2px">Aguardando liberação</div>
+        </div>
+        <button class="btn btn-gold btn-sm" onclick="releaseQueuedTeam('${team.id}')">Liberar</button>
+      </div>
+    `).join(''):'<p style="font-size:13px;color:rgba(245,237,214,.3)">Nenhuma equipe na fila.</p>';
+    queues.forEach(queue=>queue.innerHTML=html);
+  }
   const el=document.getElementById('monitor-grid');
   const cur=S.matches.filter(m=>m.round===S.currentRound);
   if(!cur.length){el.innerHTML='<p style="font-size:13px;color:rgba(245,237,214,.3)">Nenhuma partida na rodada atual.</p>';return;}
@@ -1904,6 +2000,13 @@ function renderMonitor(){
       ${m.winner?`<div style="text-align:center;padding:8px;background:rgba(245,200,66,.06);border-radius:8px;font-family:'Bebas Neue';font-size:18px;color:var(--gold);letter-spacing:2px">🏆 ${m.winner==='draw'?'EMPATE':(S.teams.find(t=>t.id===m.winner)||{name:'?'}).name}</div>`:''}
     </div>`;
   }).join('');
+}
+
+async function refreshAdminMonitor(){
+  await syncFromServer();
+  renderTeamsGrid();
+  renderMonitor();
+  updateAdminStatus();
 }
 
 // ========== KEYBOARD SHORTCUTS ==========

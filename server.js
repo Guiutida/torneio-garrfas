@@ -15,6 +15,7 @@ const defaultState = {
   currentRound: 0,
   gameStarted: false,
   bracket: [],
+  waitingQueue: [],
   currentPlayer: null,
 };
 
