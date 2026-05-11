@@ -1292,6 +1292,26 @@ async function syncFromServer(){
     try{localStorage.setItem('garrafas2',JSON.stringify(S));}catch(e){}
   }catch(e){serverOnline=false;}
 }
+
+async function postJoin(name){
+  const body=JSON.stringify({name});
+  for(let attempt=0;attempt<2;attempt++){
+    try{
+      if(attempt>0) await new Promise(resolve=>setTimeout(resolve,1200));
+      await fetch('/api/health',{cache:'no-store'}).catch(()=>{});
+      const response=await fetch('/api/join',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body
+      });
+      const data=await response.json();
+      if(!response.ok||!data.ok) throw new Error(data.error||'Erro ao entrar na fila');
+      return data;
+    }catch(error){
+      if(attempt===1) throw error;
+    }
+  }
+}
 load();
 syncFromServer();
 routeFromLink();
@@ -1334,13 +1354,7 @@ async function doLogin(){
   let team;
   if(location.protocol.startsWith('http')){
     try{
-      const response=await fetch('/api/join',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({name})
-      });
-      const data=await response.json();
-      if(!response.ok||!data.ok) throw new Error(data.error||'Erro ao entrar na fila');
+      const data=await postJoin(name);
       S=normalizeState(data.state);
       team=data.team;
       try{localStorage.setItem('garrafas2',JSON.stringify(S));}catch(e){}
