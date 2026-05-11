@@ -894,7 +894,7 @@ option { background: #1a1a1a; }
 }
 .monitor-team { text-align: center; }
 .monitor-team-name { font-weight: 600; font-size: 15px; margin-bottom: 4px; }
-.monitor-team-score { font-family: 'Bebas Neue'; font-size: 40px; color: var(--gold); line-height: 1; }
+.monitor-team-score { font-family: 'Bebas Neue'; font-size: 32px; color: var(--gold); line-height: 1; letter-spacing: 1px; }
 .monitor-vs { font-family: 'Bebas Neue'; font-size: 24px; color: rgba(245,237,214,.2); }
 .monitor-team-status { font-size: 12px; color: rgba(245,237,214,.4); margin-top: 4px; }
 .queue-list {
@@ -1373,6 +1373,10 @@ function getTeamById(id){
   return S.teams.find(t=>t.id===id);
 }
 
+function scoreText(score,total){
+  return (score!==undefined?score:0)+'/'+total+' acertos';
+}
+
 // ========== GAME ==========
 let playerOrder=[], dragSrc=null, movesMade=0, gameTimerInterval=null;
 
@@ -1786,12 +1790,54 @@ function startMatch(){
   S.numBottles=parseInt(document.getElementById('cfg-bottles').value)||5;
   S.timerSeconds=parseInt(document.getElementById('cfg-time').value)||0;
   S.adminPass=document.getElementById('cfg-pass').value||'admin123';
-  const firstQueued=S.waitingQueue.find(id=>getTeamById(id));
-  if(firstQueued){
-    releaseQueuedTeam(firstQueued);
+  const queued=S.waitingQueue.filter(id=>getTeamById(id));
+  if(queued.length>=2){
+    releaseQueuedMatch(queued[0],queued[1]);
+    return;
+  }
+  if(queued.length===1){
+    releaseQueuedTeam(queued[0]);
     return;
   }
   notify('Nenhuma equipe na fila. Peca para os jogadores clicarem em Jogar.','red');
+}
+
+function buildTeamSide(teamId){
+  const n=S.numBottles;
+  const order=shuffleArr([...Array(n).keys()]);
+  return {
+    teamId,
+    order,
+    current:createStartingOrder(order)
+  };
+}
+
+function releaseQueuedMatch(teamAId,teamBId){
+  S.numBottles=parseInt(document.getElementById('cfg-bottles').value)||S.numBottles||5;
+  S.timerSeconds=parseInt(document.getElementById('cfg-time').value)||0;
+  S.adminPass=document.getElementById('cfg-pass').value||'admin123';
+  const teamA=getTeamById(teamAId);
+  const teamB=getTeamById(teamBId);
+  if(!teamA||!teamB){notify('Equipe nao encontrada.','red');return;}
+  const sideA=buildTeamSide(teamAId);
+  const sideB=buildTeamSide(teamBId);
+  S.matches=S.matches.filter(m=>m.teamA!==teamAId&&m.teamB!==teamAId&&m.teamA!==teamBId&&m.teamB!==teamBId);
+  S.matches.push({
+    id:'match'+Date.now(),
+    round:S.currentRound||0,
+    teamA:teamAId,
+    teamB:teamBId,
+    orderA:sideA.order,
+    currentA:sideA.current,
+    orderB:sideB.order,
+    currentB:sideB.current
+  });
+  S.waitingQueue=S.waitingQueue.filter(id=>id!==teamAId&&id!==teamBId);
+  S.gameStarted=true;
+  save();
+  renderMonitor();
+  updateAdminStatus();
+  notify('▶ '+teamA.name+' x '+teamB.name+' liberadas!','green');
 }
 
 function releaseQueuedTeam(teamId){
@@ -1802,10 +1848,10 @@ function releaseQueuedTeam(teamId){
   if(!team){notify('Equipe nao encontrada.','red');return;}
   const n=S.numBottles;
   const existing=getMatchForTeam(teamId);
-  const orderA=shuffleArr([...Array(n).keys()]);
+  const side=buildTeamSide(teamId);
   const match=existing||{id:'solo'+team.id,round:S.currentRound||0,teamA:team.id,teamB:null};
-  match.orderA=orderA;
-  match.currentA=createStartingOrder(orderA);
+  match.orderA=side.order;
+  match.currentA=side.current;
   delete match.resultA; delete match.resultB; delete match.winner;
   if(!existing) S.matches.push(match);
   S.waitingQueue=S.waitingQueue.filter(id=>id!==teamId);
@@ -1977,7 +2023,7 @@ function renderMonitor(){
       return `<div class="monitor-card">
         <div class="monitor-team" style="width:100%">
           <div class="monitor-team-name" style="color:${cA}">${tA.name}</div>
-          <div class="monitor-team-score">${m.resultA!==undefined?m.resultA:'—'}</div>
+          <div class="monitor-team-score">${scoreText(m.resultA,S.numBottles)}</div>
           <div class="monitor-team-status">${sA}</div>
         </div>
         ${m.winner?`<div style="text-align:center;padding:8px;background:rgba(245,200,66,.06);border-radius:8px;font-family:'Bebas Neue';font-size:18px;color:var(--gold);letter-spacing:2px">🏆 ${tA.name} acertou tudo</div>`:''}
@@ -1987,13 +2033,13 @@ function renderMonitor(){
       <div class="monitor-teams">
         <div class="monitor-team">
           <div class="monitor-team-name" style="color:${cA}">${tA.name}</div>
-          <div class="monitor-team-score">${m.resultA!==undefined?m.resultA:'—'}</div>
+          <div class="monitor-team-score">${scoreText(m.resultA,S.numBottles)}</div>
           <div class="monitor-team-status">${sA}</div>
         </div>
         <div class="monitor-vs">VS</div>
         <div class="monitor-team">
           <div class="monitor-team-name" style="color:${cB}">${tB.name}</div>
-          <div class="monitor-team-score">${m.resultB!==undefined?m.resultB:'—'}</div>
+          <div class="monitor-team-score">${scoreText(m.resultB,S.numBottles)}</div>
           <div class="monitor-team-status">${sB}</div>
         </div>
       </div>
