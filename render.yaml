@@ -1,0 +1,8 @@
+services:
+  - type: web
+    name: torneio-garrafas
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health

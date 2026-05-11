@@ -94,6 +94,17 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (url.pathname === "/api/health" && req.method === "GET") {
+    sendJson(res, 200, {
+      ok: true,
+      service: "torneio-garrafas",
+      teams: sharedState.teams.length,
+      queue: sharedState.waitingQueue.length,
+      matches: sharedState.matches.length,
+    });
+    return;
+  }
+
   if (url.pathname === "/api/state" && req.method === "POST") {
     let body = "";
     req.on("data", (chunk) => {
