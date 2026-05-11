@@ -29,6 +29,27 @@ function loadState() {
 
 let sharedState = loadState();
 
+function normalizeState(state) {
+  const next = { ...defaultState, ...(state || {}) };
+  if (!Array.isArray(next.teams)) next.teams = [];
+  if (!Array.isArray(next.matches)) next.matches = [];
+  if (!Array.isArray(next.waitingQueue)) next.waitingQueue = [];
+  next.currentPlayer = null;
+
+  const teamIds = new Set(next.teams.map((team) => team.id));
+  next.waitingQueue = [...new Set(next.waitingQueue)].filter((id) => teamIds.has(id));
+  next.matches = next.matches.filter((match) => {
+    if (!teamIds.has(match.teamA)) return false;
+    if (match.teamB && !teamIds.has(match.teamB)) return false;
+    return true;
+  });
+
+  if (!next.matches.length && !next.waitingQueue.length) next.gameStarted = false;
+  return next;
+}
+
+sharedState = normalizeState(sharedState);
+
 function saveState() {
   fs.writeFile(stateFile, JSON.stringify(sharedState, null, 2), () => {});
 }
@@ -82,9 +103,54 @@ const server = http.createServer((req, res) => {
     req.on("end", () => {
       try {
         const incoming = JSON.parse(body || "{}");
-        sharedState = { ...defaultState, ...incoming, currentPlayer: null };
+        sharedState = normalizeState(incoming);
         saveState();
         sendJson(res, 200, { ok: true });
+      } catch {
+        sendJson(res, 400, { ok: false, error: "JSON invalido" });
+      }
+    });
+    return;
+  }
+
+  if (url.pathname === "/api/join" && req.method === "POST") {
+    let body = "";
+    req.on("data", (chunk) => {
+      body += chunk;
+      if (body.length > 1_000_000) req.destroy();
+    });
+    req.on("end", () => {
+      try {
+        const incoming = JSON.parse(body || "{}");
+        const name = String(incoming.name || "").trim();
+        if (!name) {
+          sendJson(res, 400, { ok: false, error: "Nome da equipe obrigatorio" });
+          return;
+        }
+
+        sharedState = normalizeState(sharedState);
+        let team = sharedState.teams.find(
+          (item) => item.name.toLowerCase() === name.toLowerCase(),
+        );
+
+        if (!team) {
+          team = {
+            id: `t${Date.now()}${Math.random()}`,
+            name,
+            code: "",
+          };
+          sharedState.teams.push(team);
+        }
+
+        const alreadyPlaying = sharedState.matches.some(
+          (match) => match.teamA === team.id || match.teamB === team.id,
+        );
+        if (!alreadyPlaying && !sharedState.waitingQueue.includes(team.id)) {
+          sharedState.waitingQueue.push(team.id);
+        }
+
+        saveState();
+        sendJson(res, 200, { ok: true, team, state: sharedState });
       } catch {
         sendJson(res, 400, { ok: false, error: "JSON invalido" });
       }

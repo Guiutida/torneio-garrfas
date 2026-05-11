@@ -1252,6 +1252,10 @@ function normalizeState(state){
   if(!Array.isArray(next.teams)) next.teams=[];
   if(!Array.isArray(next.matches)) next.matches=[];
   if(!Array.isArray(next.waitingQueue)) next.waitingQueue=[];
+  const validIds=new Set(next.teams.map(t=>t.id));
+  next.waitingQueue=[...new Set(next.waitingQueue)].filter(id=>validIds.has(id));
+  next.matches=next.matches.filter(m=>validIds.has(m.teamA)&&(!m.teamB||validIds.has(m.teamB)));
+  if(!next.matches.length&&!next.waitingQueue.length) next.gameStarted=false;
   if(!next.numBottles) next.numBottles=5;
   if(!next.adminPass) next.adminPass='admin123';
   if(!next.timerSeconds && next.timerSeconds!==0) next.timerSeconds=120;
@@ -1280,12 +1284,13 @@ async function syncFromServer(){
   try{
     const currentPlayer=S&&S.currentPlayer?S.currentPlayer:null;
     const response=await fetch('/api/state',{cache:'no-store'});
-    if(!response.ok) return;
+    if(!response.ok) throw new Error('api offline');
     const remote=await response.json();
+    serverOnline=true;
     S=normalizeState(remote);
     if(currentPlayer) S.currentPlayer=currentPlayer;
     try{localStorage.setItem('garrafas2',JSON.stringify(S));}catch(e){}
-  }catch(e){}
+  }catch(e){serverOnline=false;}
 }
 load();
 syncFromServer();
@@ -1294,6 +1299,7 @@ routeFromLink();
 // ========== NOTIFICATION ==========
 let notifTimer;
 let adminMonitorTimer=null;
+let serverOnline=true;
 function notify(msg, type='gold'){
   const el=document.getElementById('notif');
   el.textContent=msg; el.className='notif '+type+' show';
@@ -1325,16 +1331,37 @@ async function doLogin(){
   const err=document.getElementById('login-err');
   err.style.display='none';
   if(!name){err.textContent='Digite o nome da equipe.';err.style.display='block';return;}
-  let team=S.teams.find(t=>t.name.toLowerCase()===name.toLowerCase());
-  if(!team){
-    team={id:'t'+Date.now()+Math.random(),name,code:''};
-    S.teams.push(team);
+  let team;
+  if(location.protocol.startsWith('http')){
+    try{
+      const response=await fetch('/api/join',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({name})
+      });
+      const data=await response.json();
+      if(!response.ok||!data.ok) throw new Error(data.error||'Erro ao entrar na fila');
+      S=normalizeState(data.state);
+      team=data.team;
+      try{localStorage.setItem('garrafas2',JSON.stringify(S));}catch(e){}
+    }catch(e){
+      err.textContent='Nao foi possivel entrar na fila. Avise o organizador para verificar o Render.';
+      err.style.display='block';
+      beep(200,.3,.3,'sawtooth');
+      return;
+    }
+  } else {
+    team=S.teams.find(t=>t.name.toLowerCase()===name.toLowerCase());
+    if(!team){
+      team={id:'t'+Date.now()+Math.random(),name,code:''};
+      S.teams.push(team);
+    }
+    if(!S.waitingQueue.includes(team.id)) S.waitingQueue.push(team.id);
+    save();
   }
   S.currentPlayer=team;
   const match=getMatchForTeam(team.id);
   if(!match||!S.gameStarted){
-    if(!S.waitingQueue.includes(team.id)) S.waitingQueue.push(team.id);
-    save();
     document.getElementById('waiting-badge').textContent='👋 '+team.name;
     document.getElementById('waiting-badge').style.cssText='background:rgba(245,200,66,.1);color:var(--gold);border:1px solid rgba(245,200,66,.2);padding:8px 20px;border-radius:50px;font-weight:600;font-size:15px;margin-bottom:24px';
     document.getElementById('waiting-match').textContent='Voce esta na fila. O organizador vai liberar sua vez.';
@@ -1997,7 +2024,8 @@ function renderMonitor(){
   const queues=[document.getElementById('queue-list'),document.getElementById('queue-list-setup')].filter(Boolean);
   if(queues.length){
     const queued=(S.waitingQueue||[]).map(id=>getTeamById(id)).filter(Boolean);
-    const html=queued.length?queued.map(team=>`
+    const offline='<p style="font-size:13px;color:#e07070">Servidor nao respondeu. No Render, use Web Service com Start Command: npm start.</p>';
+    const html=!serverOnline?offline:queued.length?queued.map(team=>`
       <div class="queue-item">
         <div>
           <div class="queue-name">${team.name}</div>
