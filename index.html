@@ -1340,7 +1340,18 @@ function show(id){
 
 function routeFromLink(){
   const route=(location.search+location.hash).toLowerCase();
-  if(route.includes('admin')) setTimeout(()=>show('screen-admin-login'),0);
+  if(route.includes('admin')) setTimeout(()=>enterAdminPanel(),0);
+}
+
+function enterAdminPanel(){
+  document.getElementById('cfg-bottles').value=S.numBottles;
+  document.getElementById('cfg-time').value=S.timerSeconds;
+  document.getElementById('cfg-pass').value=S.adminPass;
+  renderTeamsGrid();
+  renderMonitor();
+  updateAdminStatus();
+  startAdminMonitorUpdates();
+  show('screen-admin');
 }
 
 // ========== LOGIN ==========
@@ -1749,14 +1760,7 @@ async function doAdminLogin(){
   const p=document.getElementById('admin-pass-in').value;
   const err=document.getElementById('admin-err');
   if(p===S.adminPass||p==='admin123'){
-    document.getElementById('cfg-bottles').value=S.numBottles;
-    document.getElementById('cfg-time').value=S.timerSeconds;
-    document.getElementById('cfg-pass').value=S.adminPass;
-    renderTeamsGrid();
-    renderMonitor();
-    updateAdminStatus();
-    startAdminMonitorUpdates();
-    show('screen-admin');
+    enterAdminPanel();
   } else {
     err.textContent='Senha incorreta.';err.style.display='block';
     beep(200,.3,.3,'sawtooth');
