@@ -1460,6 +1460,7 @@ function scoreText(score,total){
 
 // ========== GAME ==========
 let playerOrder=[], previousOrder=null, selectedBottleIndex=null, movesMade=0, gameTimerInterval=null;
+let gameTimeExpired=false, gameFinished=false, attemptSubmitting=false;
 
 function enterGame(team,match,restartTimer=true){
   stopWaitingAutoCheck();
@@ -1479,6 +1480,8 @@ function enterGame(team,match,restartTimer=true){
   previousOrder=null;
   selectedBottleIndex=null;
   movesMade=0;
+  attemptSubmitting=false;
+  gameFinished=false;
   document.getElementById('move-dot-0').classList.remove('used');
   document.getElementById('move-label').textContent='0 / 1 movimentos';
   const confirmBtn=document.getElementById('confirm-btn');
@@ -1500,6 +1503,8 @@ function enterGame(team,match,restartTimer=true){
 
 function startGameTimer(match){
   clearInterval(gameTimerInterval);
+  gameTimeExpired=false;
+  gameFinished=false;
   const total=S.timerSeconds;
   if(!total){document.getElementById('game-timer').textContent='∞';return;}
   let left=total;
@@ -1509,7 +1514,7 @@ function startGameTimer(match){
     el.textContent=min+':'+(sec<10?'0':'')+sec;
     if(left<=10){el.classList.add('urgent'); beep(880,.05,.1);}
     else el.classList.remove('urgent');
-    if(left<=0){clearInterval(gameTimerInterval);autoConfirm();}
+    if(left<=0){clearInterval(gameTimerInterval);gameTimerInterval=null;autoConfirm();}
     left--;
   }
   tick();
@@ -1517,8 +1522,14 @@ function startGameTimer(match){
 }
 
 function autoConfirm(){
+  if(gameFinished||attemptSubmitting) return;
+  gameTimeExpired=true;
+  selectedBottleIndex=null;
+  updateUndoButton(false);
+  document.getElementById('game-hint').textContent='Tempo esgotado. A ultima ordem foi enviada automaticamente.';
+  renderPlayerBottles(true);
   notify('⏰ Tempo esgotado! Confirmando automaticamente...','red');
-  confirmGuess();
+  confirmGuess(true);
 }
 
 function renderPlayerBottles(locked){
@@ -1587,6 +1598,10 @@ function animateBottleSwap(fromRects){
 }
 
 function selectBottleForSwap(i){
+  if(gameTimeExpired||gameFinished||attemptSubmitting){
+    notify('Essa tentativa ja foi encerrada.','red');
+    return;
+  }
   if(movesMade>=1){
     notify('Voce ja fez 1 movimento! Confirme sua resposta.','red');
     beep(200,.2,.2);
@@ -1632,6 +1647,7 @@ function updateUndoButton(showUndo){
 }
 
 function undoMove(){
+  if(gameTimeExpired||gameFinished||attemptSubmitting) return;
   if(!previousOrder) return;
   const fromRects=getBottleRects();
   playerOrder=[...previousOrder];
@@ -1648,15 +1664,22 @@ function undoMove(){
   animateBottleSwap(fromRects);
 }
 
-async function confirmGuess(){
+async function confirmGuess(fromTimer=false){
+  if(gameFinished||attemptSubmitting) return;
+  attemptSubmitting=true;
   const confirmBtn=document.getElementById('confirm-btn');
   confirmBtn.disabled=true;
   confirmBtn.textContent='Conferindo...';
   updateUndoButton(false);
+  renderPlayerBottles(true);
   playClick();
   await syncFromServer();
   const match=getMatchForTeam(S.currentPlayer.id);
-  if(!match) return;
+  if(!match){
+    attemptSubmitting=false;
+    renderPlayerBottles(false);
+    return;
+  }
   const isA=match.teamA===S.currentPlayer.id;
   const correct=isA?match.orderA:match.orderB;
   let hits=0;
@@ -1676,6 +1699,10 @@ async function confirmGuess(){
     else match.winner='draw';
   }
   save();
+  if(hits===S.numBottles||fromTimer||gameTimeExpired){
+    clearInterval(gameTimerInterval);
+    gameTimerInterval=null;
+  }
 
   // flip the box
   const bi=document.getElementById('player-box-inner');
@@ -1699,12 +1726,30 @@ function showResult(team,hits,total,correct,guess){
   const confirmBtn=document.getElementById('confirm-btn');
   document.getElementById('move-label').textContent=hits+'/'+total+' acertos';
   if(pct===1){
+    gameFinished=true;
+    attemptSubmitting=false;
+    clearInterval(gameTimerInterval);
+    gameTimerInterval=null;
+    renderPlayerBottles(true);
+    updateUndoButton(false);
     hint.textContent='Perfeito! '+team.name+' acertou a ordem completa.';
     confirmBtn.disabled=true;
     confirmBtn.textContent='Ordem certa';
     show('screen-game');
     return;
   }
+  if(gameTimeExpired){
+    gameFinished=true;
+    attemptSubmitting=false;
+    renderPlayerBottles(true);
+    updateUndoButton(false);
+    hint.textContent='Tempo esgotado. Resultado final: '+hits+' de '+total+' acertos.';
+    confirmBtn.disabled=true;
+    confirmBtn.textContent='Tempo esgotado';
+    show('screen-game');
+    return;
+  }
+  attemptSubmitting=false;
   hint.textContent='Resultado: '+hits+' de '+total+' acertos. A ordem continua escondida.';
   confirmBtn.disabled=false;
   confirmBtn.textContent='Continuar tentando';
