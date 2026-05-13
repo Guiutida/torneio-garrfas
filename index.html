@@ -378,9 +378,9 @@ body {
   align-items: center;
   justify-content: flex-end;
   padding-bottom: 14px;
-  cursor: grab;
+  cursor: pointer;
   position: relative;
-  transition: transform .15s, box-shadow .15s;
+  transition: transform .18s, box-shadow .18s;
   user-select: none;
   backdrop-filter: blur(4px);
   box-shadow:
@@ -389,6 +389,9 @@ body {
     0 16px 26px rgba(0,0,0,.44);
   transform-style: preserve-3d;
   overflow: visible;
+}
+.bottle * {
+  pointer-events: none;
 }
 .bottle::before {
   content: '';
@@ -417,8 +420,10 @@ body {
   pointer-events: none;
 }
 .bottle:hover { transform: translateY(-8px) rotateX(4deg) rotateY(-7deg) scale(1.04); box-shadow: inset 10px 0 20px rgba(255,255,255,.18), inset -12px 0 22px rgba(0,0,0,.26), 0 20px 38px rgba(0,0,0,.55); }
-.bottle.dragging { opacity: .5; cursor: grabbing; transform: scale(.95); }
-.bottle.drag-over { transform: translateY(-10px) rotateX(4deg) rotateY(-7deg) scale(1.06); box-shadow: 0 0 0 2px var(--gold), 0 18px 34px rgba(0,0,0,.55); }
+.bottle.swapping {
+  z-index: 5;
+  transition: transform .38s cubic-bezier(.2,.8,.2,1), box-shadow .18s;
+}
 .bottle.locked { cursor: default; }
 .bottle.locked:hover {
   transform: none;
@@ -1526,6 +1531,7 @@ function renderPlayerBottles(locked){
     const bottle=document.createElement('div');
     bottle.className='bottle bottle-'+b+(locked?' locked':'');
     bottle.dataset.idx=i;
+    bottle.dataset.bottle=b;
     bottle.innerHTML=`
       <div class="bottle-cap"></div>
       <div class="bottle-neck"></div>
@@ -1539,6 +1545,45 @@ function renderPlayerBottles(locked){
     slot.appendChild(bottle);
     row.appendChild(slot);
   });
+}
+
+function getBottleRects(){
+  const rects={};
+  document.querySelectorAll('#player-bottles .bottle').forEach(bottle=>{
+    rects[bottle.dataset.bottle]=bottle.getBoundingClientRect();
+  });
+  return rects;
+}
+
+function animateBottleSwap(fromRects){
+  const bottles=[...document.querySelectorAll('#player-bottles .bottle')];
+  const moving=[];
+  bottles.forEach(bottle=>{
+    const before=fromRects[bottle.dataset.bottle];
+    if(!before) return;
+    const after=bottle.getBoundingClientRect();
+    const dx=before.left-after.left;
+    const dy=before.top-after.top;
+    if(Math.abs(dx)<1&&Math.abs(dy)<1) return;
+    bottle.classList.add('swapping');
+    bottle.style.transition='none';
+    bottle.style.transform=`translate(${dx}px, ${dy}px)`;
+    moving.push(bottle);
+  });
+  if(!moving.length) return;
+  requestAnimationFrame(()=>{
+    moving.forEach(bottle=>{
+      bottle.style.transition='';
+      bottle.style.transform='';
+    });
+  });
+  setTimeout(()=>{
+    moving.forEach(bottle=>{
+      bottle.classList.remove('swapping');
+      bottle.style.transition='';
+      bottle.style.transform='';
+    });
+  },430);
 }
 
 function selectBottleForSwap(i){
@@ -1562,6 +1607,7 @@ function selectBottleForSwap(i){
     return;
   }
   const from=selectedBottleIndex;
+  const fromRects=getBottleRects();
   previousOrder=[...playerOrder];
   const tmp=playerOrder[from];
   playerOrder[from]=playerOrder[i];
@@ -1575,6 +1621,7 @@ function selectBottleForSwap(i){
   document.getElementById('game-hint').textContent='Movimento feito! Revise a ordem e confirme quando estiver pronto.';
   beep(660,.08,.2);
   renderPlayerBottles(false);
+  animateBottleSwap(fromRects);
 }
 
 function updateUndoButton(showUndo){
@@ -1586,6 +1633,7 @@ function updateUndoButton(showUndo){
 
 function undoMove(){
   if(!previousOrder) return;
+  const fromRects=getBottleRects();
   playerOrder=[...previousOrder];
   previousOrder=null;
   selectedBottleIndex=null;
@@ -1597,6 +1645,7 @@ function undoMove(){
   document.getElementById('game-hint').textContent='Troca desfeita. Clique em duas garrafas para tentar outra jogada.';
   playClick();
   renderPlayerBottles(false);
+  animateBottleSwap(fromRects);
 }
 
 async function confirmGuess(){
