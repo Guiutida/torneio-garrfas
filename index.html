@@ -592,6 +592,12 @@ body {
 }
 .move-dot.used { background: var(--gold); border-color: var(--gold-dark); box-shadow: 0 0 8px rgba(245,200,66,.5); }
 .move-label { font-size: 13px; color: rgba(245,237,214,.5); font-family: 'DM Mono'; }
+.undo-move-btn {
+  display: none;
+}
+.undo-move-btn.visible {
+  display: inline-flex;
+}
 
 /* ======== RESULT SCREEN ======== */
 #screen-result {
@@ -1080,6 +1086,9 @@ kbd {
       <button class="btn btn-gold" id="confirm-btn" onclick="confirmGuess()" disabled>
         ✅ Confirmar ordem
       </button>
+      <button class="btn btn-outline undo-move-btn" id="undo-move-btn" onclick="undoMove()">
+        Desfazer troca
+      </button>
     </div>
     <div id="game-hint" style="font-size:13px;color:rgba(245,237,214,.35);text-align:center">
       Clique em duas garrafas para trocar de posicao. Voce so pode fazer 1 troca!
@@ -1445,7 +1454,7 @@ function scoreText(score,total){
 }
 
 // ========== GAME ==========
-let playerOrder=[], selectedBottleIndex=null, movesMade=0, gameTimerInterval=null;
+let playerOrder=[], previousOrder=null, selectedBottleIndex=null, movesMade=0, gameTimerInterval=null;
 
 function enterGame(team,match,restartTimer=true){
   stopWaitingAutoCheck();
@@ -1462,6 +1471,7 @@ function enterGame(team,match,restartTimer=true){
 
   const visibleOrder=isA?(match.currentA||match.orderA):(match.currentB||match.orderB);
   playerOrder=[...visibleOrder];
+  previousOrder=null;
   selectedBottleIndex=null;
   movesMade=0;
   document.getElementById('move-dot-0').classList.remove('used');
@@ -1470,6 +1480,7 @@ function enterGame(team,match,restartTimer=true){
   confirmBtn.disabled=true;
   confirmBtn.textContent='✅ Confirmar ordem';
   confirmBtn.onclick=confirmGuess;
+  updateUndoButton(false);
   document.getElementById('game-hint').textContent='Clique em duas garrafas para trocar de posicao. Voce so pode fazer 1 troca!';
 
   // reset flip
@@ -1551,6 +1562,7 @@ function selectBottleForSwap(i){
     return;
   }
   const from=selectedBottleIndex;
+  previousOrder=[...playerOrder];
   const tmp=playerOrder[from];
   playerOrder[from]=playerOrder[i];
   playerOrder[i]=tmp;
@@ -1559,8 +1571,31 @@ function selectBottleForSwap(i){
   document.getElementById('move-dot-0').classList.add('used');
   document.getElementById('move-label').textContent='1 / 1 movimentos';
   document.getElementById('confirm-btn').disabled=false;
+  updateUndoButton(true);
   document.getElementById('game-hint').textContent='Movimento feito! Revise a ordem e confirme quando estiver pronto.';
   beep(660,.08,.2);
+  renderPlayerBottles(false);
+}
+
+function updateUndoButton(showUndo){
+  const undoBtn=document.getElementById('undo-move-btn');
+  if(!undoBtn) return;
+  undoBtn.classList.toggle('visible', !!showUndo);
+  undoBtn.disabled=!showUndo;
+}
+
+function undoMove(){
+  if(!previousOrder) return;
+  playerOrder=[...previousOrder];
+  previousOrder=null;
+  selectedBottleIndex=null;
+  movesMade=0;
+  document.getElementById('move-dot-0').classList.remove('used');
+  document.getElementById('move-label').textContent='0 / 1 movimentos';
+  document.getElementById('confirm-btn').disabled=true;
+  updateUndoButton(false);
+  document.getElementById('game-hint').textContent='Troca desfeita. Clique em duas garrafas para tentar outra jogada.';
+  playClick();
   renderPlayerBottles(false);
 }
 
@@ -1568,6 +1603,7 @@ async function confirmGuess(){
   const confirmBtn=document.getElementById('confirm-btn');
   confirmBtn.disabled=true;
   confirmBtn.textContent='Conferindo...';
+  updateUndoButton(false);
   playClick();
   await syncFromServer();
   const match=getMatchForTeam(S.currentPlayer.id);
