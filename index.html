@@ -603,6 +603,12 @@ body {
 .undo-move-btn.visible {
   display: inline-flex;
 }
+.final-home-btn {
+  display: none;
+}
+.final-home-btn.visible {
+  display: inline-flex;
+}
 
 /* ======== RESULT SCREEN ======== */
 #screen-result {
@@ -1094,6 +1100,9 @@ kbd {
       <button class="btn btn-outline undo-move-btn" id="undo-move-btn" onclick="undoMove()">
         Desfazer troca
       </button>
+      <button class="btn btn-outline final-home-btn" id="final-home-btn" onclick="goBackToStart()">
+        Voltar ao inicio
+      </button>
     </div>
     <div id="game-hint" style="font-size:13px;color:rgba(245,237,214,.35);text-align:center">
       Clique em duas garrafas para trocar de posicao. Voce so pode fazer 1 troca!
@@ -1489,6 +1498,7 @@ function enterGame(team,match,restartTimer=true){
   confirmBtn.textContent='✅ Confirmar ordem';
   confirmBtn.onclick=confirmGuess;
   updateUndoButton(false);
+  updateFinalHomeButton(false);
   document.getElementById('game-hint').textContent='Clique em duas garrafas para trocar de posicao. Voce so pode fazer 1 troca!';
 
   // reset flip
@@ -1646,6 +1656,23 @@ function updateUndoButton(showUndo){
   undoBtn.disabled=!showUndo;
 }
 
+function updateFinalHomeButton(showHome){
+  const homeBtn=document.getElementById('final-home-btn');
+  if(!homeBtn) return;
+  homeBtn.classList.toggle('visible', !!showHome);
+  homeBtn.disabled=!showHome;
+}
+
+function goBackToStart(){
+  clearInterval(gameTimerInterval);
+  gameTimerInterval=null;
+  stopWaitingAutoCheck();
+  S.currentPlayer=null;
+  updateUndoButton(false);
+  updateFinalHomeButton(false);
+  show('screen-landing');
+}
+
 function undoMove(){
   if(gameTimeExpired||gameFinished||attemptSubmitting) return;
   if(!previousOrder) return;
@@ -1732,6 +1759,7 @@ function showResult(team,hits,total,correct,guess){
     gameTimerInterval=null;
     renderPlayerBottles(true);
     updateUndoButton(false);
+    updateFinalHomeButton(true);
     hint.textContent='Perfeito! '+team.name+' acertou a ordem completa.';
     confirmBtn.disabled=true;
     confirmBtn.textContent='Ordem certa';
@@ -1743,6 +1771,7 @@ function showResult(team,hits,total,correct,guess){
     attemptSubmitting=false;
     renderPlayerBottles(true);
     updateUndoButton(false);
+    updateFinalHomeButton(true);
     hint.textContent='Tempo esgotado. Resultado final: '+hits+' de '+total+' acertos.';
     confirmBtn.disabled=true;
     confirmBtn.textContent='Tempo esgotado';
@@ -1750,6 +1779,7 @@ function showResult(team,hits,total,correct,guess){
     return;
   }
   attemptSubmitting=false;
+  updateFinalHomeButton(false);
   hint.textContent='Resultado: '+hits+' de '+total+' acertos. A ordem continua escondida.';
   confirmBtn.disabled=false;
   confirmBtn.textContent='Continuar tentando';
