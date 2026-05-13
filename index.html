@@ -348,6 +348,14 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 54px;
+  cursor: pointer;
+}
+.bottle-slot.selected .bottle {
+  box-shadow: 0 0 0 3px var(--gold), 0 0 28px rgba(255,204,51,.35);
+  transform: translateY(-8px) scale(1.04);
+}
+.bottle-slot.locked {
+  cursor: default;
 }
 .bottle-slot .slot-num {
   font-size: 11px;
@@ -529,7 +537,14 @@ body {
   text-shadow: 0 4px 20px rgba(245,200,66,.4);
 }
 .reveal-label { font-size: 13px; color: rgba(245,237,214,.5); letter-spacing: 2px; text-transform: uppercase; margin-top: 4px; }
-.reveal-bottles-row { display: flex; gap: 8px; margin-top: 16px; }
+.reveal-bottles-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  color: rgba(245,237,214,.55);
+  font-size: 14px;
+  text-align: center;
+}
 .reveal-bottle-mini {
   width: 36px;
   height: 50px;
@@ -1045,7 +1060,7 @@ kbd {
         <!-- BACK (default visible) -->
         <div class="box-face box-back" id="player-box-back">
           <div class="wood-grain"></div>
-          <div class="box-label">ORDEM SECRETA — ARRASTE PARA REORDENAR</div>
+          <div class="box-label">ORDEM SECRETA - CLIQUE EM DUAS GARRAFAS PARA TROCAR</div>
           <div class="bottles-row" id="player-bottles"></div>
         </div>
         <!-- FRONT (revealed after confirm) -->
@@ -1067,7 +1082,7 @@ kbd {
       </button>
     </div>
     <div id="game-hint" style="font-size:13px;color:rgba(245,237,214,.35);text-align:center">
-      Arraste as garrafas para trocar de posição. Você só pode fazer 1 troca!
+      Clique em duas garrafas para trocar de posicao. Voce so pode fazer 1 troca!
     </div>
   </div>
 </div>
@@ -1430,9 +1445,9 @@ function scoreText(score,total){
 }
 
 // ========== GAME ==========
-let playerOrder=[], dragSrc=null, movesMade=0, gameTimerInterval=null;
+let playerOrder=[], selectedBottleIndex=null, movesMade=0, gameTimerInterval=null;
 
-function enterGame(team,match){
+function enterGame(team,match,restartTimer=true){
   stopWaitingAutoCheck();
   const isA=match.teamA===team.id;
   const result=isA?match.resultA:match.resultB;
@@ -1447,6 +1462,7 @@ function enterGame(team,match){
 
   const visibleOrder=isA?(match.currentA||match.orderA):(match.currentB||match.orderB);
   playerOrder=[...visibleOrder];
+  selectedBottleIndex=null;
   movesMade=0;
   document.getElementById('move-dot-0').classList.remove('used');
   document.getElementById('move-label').textContent='0 / 1 movimentos';
@@ -1454,7 +1470,7 @@ function enterGame(team,match){
   confirmBtn.disabled=true;
   confirmBtn.textContent='✅ Confirmar ordem';
   confirmBtn.onclick=confirmGuess;
-  document.getElementById('game-hint').textContent='Arraste as garrafas para trocar de posição. Você só pode fazer 1 troca!';
+  document.getElementById('game-hint').textContent='Clique em duas garrafas para trocar de posicao. Voce so pode fazer 1 troca!';
 
   // reset flip
   const bi=document.getElementById('player-box-inner');
@@ -1462,7 +1478,7 @@ function enterGame(team,match){
   document.getElementById('player-box-front').style.display='';
 
   renderPlayerBottles(false);
-  startGameTimer(match);
+  if(restartTimer) startGameTimer(match);
   show('screen-game');
 }
 
@@ -1494,7 +1510,7 @@ function renderPlayerBottles(locked){
   row.innerHTML='';
   playerOrder.forEach((b,i)=>{
     const slot=document.createElement('div');
-    slot.className='bottle-slot';
+    slot.className='bottle-slot'+(selectedBottleIndex===i?' selected':'')+(locked?' locked':'');
     slot.innerHTML=`<div class="slot-num">Pos. ${i+1}</div>`;
     const bottle=document.createElement('div');
     bottle.className='bottle bottle-'+b+(locked?' locked':'');
@@ -1506,39 +1522,52 @@ function renderPlayerBottles(locked){
       <div class="bottle-label"><div class="bottle-id">${String.fromCharCode(65+b)}</div></div>
     `;
     if(!locked){
-      bottle.draggable=true;
-      bottle.addEventListener('dragstart',e=>{
-        dragSrc=i;
-        setTimeout(()=>bottle.classList.add('dragging'),0);
-        playClick();
-      });
-      bottle.addEventListener('dragend',()=>bottle.classList.remove('dragging'));
-      bottle.addEventListener('dragover',e=>{e.preventDefault();bottle.classList.add('drag-over');});
-      bottle.addEventListener('dragleave',()=>bottle.classList.remove('drag-over'));
-      bottle.addEventListener('drop',e=>{
-        e.preventDefault();
-        bottle.classList.remove('drag-over');
-        if(dragSrc===null||dragSrc===i) return;
-        if(movesMade>=1){notify('Você já fez 1 movimento! Confirme sua resposta.','red');beep(200,.2,.2);return;}
-        const tmp=playerOrder[dragSrc];
-        playerOrder[dragSrc]=playerOrder[i];
-        playerOrder[i]=tmp;
-        movesMade++;
-        document.getElementById('move-dot-0').classList.add('used');
-        document.getElementById('move-label').textContent='1 / 1 movimentos';
-        document.getElementById('confirm-btn').disabled=false;
-        document.getElementById('game-hint').textContent='Movimento feito! Revise a ordem e confirme quando estiver pronto.';
-        beep(660,.08,.2);
-        renderPlayerBottles(false);
-      });
+      bottle.draggable=false;
+      bottle.addEventListener('click',()=>selectBottleForSwap(i));
     }
     slot.appendChild(bottle);
     row.appendChild(slot);
   });
 }
 
+function selectBottleForSwap(i){
+  if(movesMade>=1){
+    notify('Voce ja fez 1 movimento! Confirme sua resposta.','red');
+    beep(200,.2,.2);
+    return;
+  }
+  if(selectedBottleIndex===null){
+    selectedBottleIndex=i;
+    document.getElementById('game-hint').textContent='Agora clique na garrafa que vai trocar de lugar com essa.';
+    playClick();
+    renderPlayerBottles(false);
+    return;
+  }
+  if(selectedBottleIndex===i){
+    selectedBottleIndex=null;
+    document.getElementById('game-hint').textContent='Selecao cancelada. Clique em duas garrafas para trocar.';
+    playClick();
+    renderPlayerBottles(false);
+    return;
+  }
+  const from=selectedBottleIndex;
+  const tmp=playerOrder[from];
+  playerOrder[from]=playerOrder[i];
+  playerOrder[i]=tmp;
+  selectedBottleIndex=null;
+  movesMade++;
+  document.getElementById('move-dot-0').classList.add('used');
+  document.getElementById('move-label').textContent='1 / 1 movimentos';
+  document.getElementById('confirm-btn').disabled=false;
+  document.getElementById('game-hint').textContent='Movimento feito! Revise a ordem e confirme quando estiver pronto.';
+  beep(660,.08,.2);
+  renderPlayerBottles(false);
+}
+
 async function confirmGuess(){
-  clearInterval(gameTimerInterval);
+  const confirmBtn=document.getElementById('confirm-btn');
+  confirmBtn.disabled=true;
+  confirmBtn.textContent='Conferindo...';
   playClick();
   await syncFromServer();
   const match=getMatchForTeam(S.currentPlayer.id);
@@ -1567,14 +1596,7 @@ async function confirmGuess(){
   const bi=document.getElementById('player-box-inner');
   document.getElementById('reveal-score').textContent=hits+'/'+S.numBottles;
   const rb=document.getElementById('reveal-bottles');
-  rb.innerHTML='';
-  playerOrder.forEach((b,i)=>{
-    const ok=correct[i]===b;
-    const d=document.createElement('div');
-    d.className='reveal-bottle-mini bottle-'+b+(ok?' correct':' wrong');
-    d.innerHTML=BOTTLE_EMOJIS[b]+(ok?'<div class="reveal-check">✓</div>':'');
-    rb.appendChild(d);
-  });
+  rb.textContent='A ordem continua escondida';
 
   setTimeout(()=>{
     bi.classList.add('flipped');
@@ -1614,7 +1636,7 @@ async function retryAttempt(){
   if(isA) delete match.resultA; else delete match.resultB;
   if(match.winner===S.currentPlayer.id) delete match.winner;
   save();
-  enterGame(S.currentPlayer,match);
+  enterGame(S.currentPlayer,match,false);
 }
 
 // ========== PROJECTOR ==========
